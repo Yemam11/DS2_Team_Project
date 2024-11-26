@@ -7,10 +7,10 @@ library(lubridate)
 library(stringr)
         
 # Setting file path 
-file_path <- "/Users/zachery/Downloads/transfusion_data.xlsx"
+#file_path <- "/Users/zachery/Downloads/transfusion_data.xlsx"
 
 # Reading data from excel file 
-raw_data <- read_excel(file_path)
+raw_data <- read_excel("transfusion_data.xlsx")
 # NOTE: blank columns in excel file given numbers as columns 
 
 colnames(raw_data)
@@ -140,3 +140,5 @@ data <- data %>%
 data$MASSIVE_TRANSFUSION <- factor(data$MASSIVE_TRANSFUSION, levels = c(0,1), labels = c(FALSE, TRUE))
 
 summary(data)
+
+#Need to go fix RBC count data, there are some NAs where there should be zeros

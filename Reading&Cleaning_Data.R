@@ -1,17 +1,24 @@
-# Pulling Data for Team Assignment 
+#' BTC1877 Team Project Main file
+#' Authors: Zack Chan, Taran Bhartt, Mingwei Cui, Youssef Emam
+#' Date: December 2nd, 2024
 
-# Setting libraries 
+#### Loading libraries ####
 library(readxl)
 library(dplyr)
 library(lubridate)
 library(stringr)
-        
-# Setting file path 
-#file_path <- "/Users/zachery/Downloads/transfusion_data.xlsx"
+library(mice)
+
+#### Importing Data ####
+     
+# Ensure that the transfusion_data.xlsx file is in the working directory to run.
 
 # Reading data from excel file 
 raw_data <- read_excel("transfusion_data.xlsx")
 # NOTE: blank columns in excel file given numbers as columns 
+
+
+#### Data preprocessing and cleaning ####
 
 colnames(raw_data)
 # blank columns of DH - DK renamed as 112 - 115 
@@ -32,6 +39,7 @@ data <- raw_data %>%
   select(-112, -113, -114, -115)
 # Getting rid of blank columns 
 
+#assigning blanks and '?' to NA values
 for (col in colnames(data)) {
   if (is.character(data[[col]]) || is.factor(data[[col]])) {
   if (any(data[[col]] == "?", na.rm = TRUE)) {
@@ -87,6 +95,15 @@ for (col in factor_columns) {
 str(data)
 # NOTE: ODDITIES IN PROTAMINE --> SHOULD BE A FACTOR OF 0/1, see levels of 25 & 400
 
+# Replace all non binary values with NA
+# data <- data %>% 
+#   mutate(`Protamine (Y=1 N=0)` = case_when(
+#     `Protamine (Y=1 N=0)` != 1 | `Protamine (Y=1 N=0)` != 0 ~ NA,
+#     .default = `Protamine (Y=1 N=0)`
+#   ))
+# 
+# data[["Protamine (Y=1 N=0)"]] <- droplevels(data[["Protamine (Y=1 N=0)"]])
+
 # Converting dates 
 data$`Extubation Date` <-  ymd_hms(data$`Extubation Date`)
 
@@ -104,16 +121,30 @@ data$`Duration of ICU stay (days)` == data$`Duration of ICU Stay (days)`
 data <- data %>%
   select(-`Duration of ICU Stay (days)`)
 
+#Renaming certain similar columns, which become identical if special chars are removed
+data <- data %>% 
+  rename("Lung1_Functional_Plt_Number" = `Lung1_Functional Plt #`,
+         "Lung1_Functional_Plt_Percent" = `Lung1_Functional Plt %`,
+         "Lung2_Functional_Plt_Number" = `Lung2_Functional Plt #`,
+         "Lung2_Functional_Plt_Percent" = `Lung2_Functional Plt %`
+         )
+
+# Renaming a duplicate column
+colnames(data)[94] <- "ICU_DISCHARGE_DATE_TIME2"
+
 # Adressing spaces in variable names 
 # Getting column names 
 col_name1 <- colnames(data)
 
 # Converting to uppercase, trimming whitespace, comverting spaces into "_"s
+
 col_name2 <- str_to_upper(col_name1)
 
 col_name3 <- str_trim(col_name2)
 
-col_name4 <- str_replace_all(col_name3, " ", "_")
+#col_name4 <- str_replace_all(col_name3, " ", "_")
+
+col_name4 <- gsub("[^A-Za-z0-9]+", "_", col_name3)
 
 colnames(data) <- col_name4
 
@@ -140,5 +171,12 @@ data <- data %>%
 data$MASSIVE_TRANSFUSION <- factor(data$MASSIVE_TRANSFUSION, levels = c(0,1), labels = c(FALSE, TRUE))
 
 summary(data)
-
 #Need to go fix RBC count data, there are some NAs where there should be zeros
+# We can wait and see which variables we will actually use and that will help determine which ones to clean
+
+
+#### Imputation ####
+
+imputed_data <- mice(data = data, m = 1, seed = 123, defaultMethod = c("pmm", "logreg", "polyreg", "polyr"))
+
+#Figure out the error

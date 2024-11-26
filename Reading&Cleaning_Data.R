@@ -175,8 +175,33 @@ summary(data)
 # We can wait and see which variables we will actually use and that will help determine which ones to clean
 
 
-#### Imputation ####
+#### Initial Imputation / Missing Data Processing ####
 
-imputed_data <- mice(data = data, m = 1, seed = 123, defaultMethod = c("pmm", "logreg", "polyreg", "polyr"))
+#Subsetting the data to select only the relevant columns
+modeling_data <- data %>% 
+  select(TYPE:PROTAMINE_Y_1_N_0_)
 
-#Figure out the error
+
+#Removing columns with > 30% missingness
+for (name in names(modeling_data)){
+  pct_missing <- sum(is.na(modeling_data[[name]]))/length(modeling_data[[name]])
+  cat(name, ":", pct_missing,"\n")
+  
+  #drop the column
+  
+  if (pct_missing >= 30){
+    modeling_data[[name]] <- NULL
+  }
+}
+
+imputed_data <- mice(data = modeling_data, m = 1, seed = 123, defaultMethod = c("pmm", "logreg", "polyreg", "polyr"))
+#Figure out the error - likely due to coliniearity, this will be resolved when we narrow down which variables to select
+
+#Extract the imputed dataset
+
+imputed_data <- complete(imputed_data)
+
+#No NAs
+anyNA(imputed_data)
+
+

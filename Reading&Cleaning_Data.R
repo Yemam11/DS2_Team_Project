@@ -5,9 +5,15 @@
 #### Loading libraries ####
 library(readxl)
 library(dplyr)
+library(tidyverse)
 library(lubridate)
 library(stringr)
 library(mice)
+library(ggplot2)
+library(glmnet)
+library(pROC)
+library(tree)
+library(survival)
 
 #### Importing Data ####
      
@@ -170,6 +176,18 @@ data <- data %>%
 # Factoring Massive transfution 
 data$MASSIVE_TRANSFUSION <- factor(data$MASSIVE_TRANSFUSION, levels = c(0,1), labels = c(FALSE, TRUE))
 
+#Creating a column that records whether a transfusion ocurred
+# Use total 24H RBC, second last column - THIS SEEMS TO CONFLICT WITH THE OTHER RBC COLUMNS, why?
+
+data <- data %>% 
+  mutate(TRANSFUSION_GIVEN = case_when(
+    TOTAL_24HR_RBC == 0 ~ 0,
+    TOTAL_24HR_RBC != 0 & !is.na(TOTAL_24HR_RBC) ~ 1
+  ))
+
+data$TRANSFUSION_GIVEN <- factor(data$TRANSFUSION_GIVEN, levels = c(1,0), labels = c(TRUE, FALSE))
+
+
 summary(data)
 #Need to go fix RBC count data, there are some NAs where there should be zeros
 # We can wait and see which variables we will actually use and that will help determine which ones to clean
@@ -178,24 +196,24 @@ summary(data)
 #### Initial Imputation / Missing Data Processing ####
 
 #Subsetting the data to select only the relevant columns
-modeling_data <- data %>% 
-  select(TYPE:PROTAMINE_Y_1_N_0_)
-
+# THIS WILL NEED TO CHANGE
+modeling_data <- data %>%
+  select(TYPE:PROTAMINE_Y_1_N_0_, TRANSFUSION_GIVEN)
 
 #Removing columns with > 30% missingness
 for (name in names(modeling_data)){
   pct_missing <- sum(is.na(modeling_data[[name]]))/length(modeling_data[[name]])
   cat(name, ":", pct_missing,"\n")
   
-  #drop the column
-  
-  if (pct_missing >= 30){
+  #drop the column if 
+  if (pct_missing >= 0.3){
     modeling_data[[name]] <- NULL
   }
 }
 
 imputed_data <- mice(data = modeling_data, m = 1, seed = 123, defaultMethod = c("pmm", "logreg", "polyreg", "polyr"))
 #Figure out the error - likely due to coliniearity, this will be resolved when we narrow down which variables to select
+# Will also likely need to deal with colinearity of the data when imputing
 
 #Extract the imputed dataset
 
@@ -203,5 +221,116 @@ imputed_data <- complete(imputed_data)
 
 #No NAs
 anyNA(imputed_data)
+
+
+#### Deciding on model with highest discrimination ####
+
+#Create/ Cross validate the models 5 times, and then test and capture AUC
+# Use the model with the highest AUC
+
+
+#Create data frame to hold results
+results <- data.frame(trial = 1:5, lasso_AUC = 1:5, pruned_tree_AUC = 1:5, tree_AUC = 1:5)
+
+
+# Create loop to repeat the process 5 times and capture the result each time
+for (i in 1:5){
+  
+  #Set a random seed to reduce sampling bias in each iteration
+  set.seed(sample(1:1000, 1))
+  
+  #Splitting the data into training and test (80:20 split)
+  test_index <- sample(nrow(imputed_data), nrow(imputed_data)/5)
+  
+  testing_data <- imputed_data[test_index,]
+  training_data <-imputed_data[-test_index,]
+  
+  #### Building lasso classifier ####
+  
+  #create model matrix for the features, remove intercept
+  features <- model.matrix(TRANSFUSION_GIVEN~., training_data)[,-1]
+  
+  #create response vector
+  response <- training_data$TRANSFUSION_GIVEN
+  
+  #identify the lambda which minimizes AUC using 5 fold cross validation
+  classifier_tuning <- cv.glmnet(features, response, alpha = 1, family = "binomial", type.measure = "auc", nfolds = 5)
+  
+  
+  #extract min lambda
+  min_lambda <- classifier_tuning$lambda.min
+  
+  #Create a model
+  classifier_model <- glmnet(features, response, family = "binomial")
+  
+  #create new data for predictions, remove intercept
+  newdata <- model.matrix(TRANSFUSION_GIVEN~., testing_data)[,-1]
+  
+  #Make predictions using the trained model
+  predictions <- as.numeric(predict(classifier_model, newx = newdata, s= min_lambda, type = "response"))
+  
+  # plot ROC
+  ROC <- roc(TRANSFUSION_GIVEN ~ predictions, data=testing_data)
+  
+  #Save the AUC to the DF
+  results[i, "lasso_AUC"] <- ROC$auc
+  
+  #### Building classification trees ####
+  
+  #create a classification tree excluding time
+  classification_tree <- tree(TRANSFUSION_GIVEN ~., data = imputed_data, subset = -test_index)
+  
+  
+  #Cross validation for pruning
+  cv.classification_tree <- cv.tree(classification_tree, FUN=prune.tree, K = 5)
+  
+  #extract the tree with the lowest deviance
+  best.size <- cv.classification_tree$size[which.min(cv.classification_tree$dev)]
+  
+  #make sure the tree is not a stump
+  if (best.size == 1){
+    best.size <- 2
+  }
+  
+  #prune the tree to be the optimal size
+  pruned_tree <- prune.misclass(classification_tree, best=best.size)
+  
+  
+  #predict using the classifier tree
+  pruned_tree_prediction = predict(pruned_tree, newdata = testing_data, type = "vector")
+  
+  #extract probability of event
+  pruned_tree_probabilities <- pruned_tree_prediction[,2]
+  
+  #predict using unpruned tree
+  tree_prediction = predict(classification_tree, newdata = testing_data, type = "vector")
+  
+  #extract probability of event
+  tree_probabilities <- tree_prediction[,2]
+  
+  #determine ROC for pruned tree
+  pruned_tree_ROC <- roc(TRANSFUSION_GIVEN ~ pruned_tree_probabilities, data = testing_data)
+
+  
+  #save results for the pruned tree
+  results[i, "pruned_tree_AUC"] <- pruned_tree_ROC$auc
+  
+  #determine ROC for unpruned tree
+  tree_ROC <- roc(TRANSFUSION_GIVEN ~ tree_probabilities, data = testing_data)
+  
+  #save AUC for tree
+  results[i, "tree_AUC"] <- tree_ROC$auc
+  
+}
+
+#pivot the data longer
+results <- pivot_longer(results, cols = lasso_AUC:tree_AUC, names_to = "Model", values_to = "AUC")
+
+# Calculate the Average AUC for each classifier
+results <- results %>% 
+  group_by(Model) %>% 
+  summarise(average_auc = mean(AUC))
+
+# The lasso classifier appears to be the model with the best discrimination
 
 

@@ -328,7 +328,8 @@ results <- pivot_longer(results, cols = lasso_AUC:tree_AUC, names_to = "Model", 
 # Calculate the Average AUC for each classifier
 results <- results %>% 
   group_by(Model) %>% 
-  summarise(average_auc = mean(AUC))
+  summarise(average_auc = mean(AUC),
+            stdv = sd(AUC))
 
 # The lasso classifier appears to be the model with the best discrimination
 
@@ -362,9 +363,47 @@ coef.glmnet(classifier_tuning, s = min_lambda)
 
 plot(classifier_tuning)
 
+
+
+#Extract coefficient names
+coef_names <- rownames(coef(classifier_model))
+coef_names <- c("Intercept", "Preoperative ECLS", "Intraoperative ECMO", "Intraoperative CPB", "COPD", "Cystic Fibrosis", "Preoperative Hemoglobin", "Preoperative Platelets", "Preoperative 
+Prothrombin Time", "Preoperative Internal Normalized Ratio", "Preoperative Creatinine", "Intraoperative Albumin", "Intraoperative Crystalloid", "Intraoperative Cell Saver", "Intraoperative Cryopercipitate", "LAS Score", "BMI", "Age", "Single Left Lung Transplant", "Single Right Lung Transplant")
+colors <- c("#4b6a53",
+            "#b249d5",
+            "#7edc45",
+            "#5c47b8",
+            "#cfd251",
+            "#ff69b4",
+            "#69c86c",
+            "#cd3e50",
+            "#83d5af",
+            "#da6130",
+            "#5e79b2",
+            "#c29545",
+            "#532a5a",
+            "#5f7b35",
+            "#c497cf",
+            "#773a27",
+            "#7cb9cb",
+            "#594e50",
+            "#d3c4a8",
+            "#c17e7f")
+
 # Creating coefficient plot
 classifier_model <- glmnet(features, response, family = "binomial", alpha = 1)
-plot(classifier_model, label = T, xvar = "lambda")
+plot(classifier_model, xvar = "lambda", lwd = 2, col = colors)
+abline(h = 0, col = "black", lty = 2, lwd = 2)
+title(main = "Lasso Classifier Regularization Plot",
+      line = 3)
+
+#Create a legend
+legend("bottomright",
+       legend = coef_names,
+       col = colors,
+       cex = 0.5,
+       lwd = 2)
+
 
 
 #### Building Lasso Regression Model ####
@@ -403,7 +442,18 @@ plot(regression_tuning)
 
 # Creating coefficient plot
 regression_model <- glmnet(features, response, alpha = 1)
-plot(classifier_model, label = T, xvar = "lambda")
+plot(regression_model, xvar = "lambda", lwd = 2, col = colors)
+abline(h = 0, col = "black", lty = 2, lwd = 2)
+title(main = "Lasso Classifier Regularization Plot",
+      line = 3)
+
+#Create a legend
+legend("topright",
+       legend = coef_names,
+       col = colors,
+       cex = 0.5,
+       lwd = 2)
+
 
 
 

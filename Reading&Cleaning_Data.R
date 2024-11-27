@@ -177,7 +177,7 @@ data <- data %>%
 data$MASSIVE_TRANSFUSION <- factor(data$MASSIVE_TRANSFUSION, levels = c(0,1), labels = c(FALSE, TRUE))
 
 #Creating a column that records whether a transfusion ocurred
-# Use total 24H RBC, second last column - THIS SEEMS TO CONFLICT WITH THE OTHER RBC COLUMNS, why?
+# Use total 24H RBC, second last column
 
 data <- data %>% 
   mutate(TRANSFUSION_GIVEN = case_when(

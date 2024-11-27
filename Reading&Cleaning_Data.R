@@ -200,7 +200,7 @@ summary(data)
 
 # Variables to investigate for association with transfusion
 modeling_data <- data %>%
-  select(TRANSFUSION_GIVEN, PREOPERATIVE_ECLS, ECLS_ECMO, ECLS_ECMO, COPD, CYSTIC_FIBROSIS, PRE_HB, PRE_PLATELETS, PRE_PT, PRE_INR, PRE_CREATININE, PROTAMINE_Y_1_N_0_, INTRA_ALBUMIN_5_ML_, INTRA_CRYSTALLOID_ML_, INTRA_CELL_SAVER_RETURNED_ML_, INTRA_CRYOPRECIPITATE, LAS_SCORE, BMI, AGE, TYPE)
+  select(TRANSFUSION_GIVEN, PREOPERATIVE_ECLS, ECLS_ECMO, ECLS_CPB, COPD, CYSTIC_FIBROSIS, PRE_HB, PRE_PLATELETS, PRE_PT, PRE_INR, PRE_CREATININE, PROTAMINE_Y_1_N_0_, INTRA_ALBUMIN_5_ML_, INTRA_CRYSTALLOID_ML_, INTRA_CELL_SAVER_RETURNED_ML_, INTRA_CRYOPRECIPITATE, LAS_SCORE, BMI, AGE, TYPE)
 
 
 
@@ -339,6 +339,41 @@ results <- results %>%
 
 # The lasso classifier appears to be the model with the best discrimination
 
+# Cross validation and creation of lasso model
 
+#Set a random seed - we actually may not need to do this, since we are not testing the model afterwards, but should we
+set.seed(12)
+
+#Splitting the data into training and test (80:20 split)
+test_index <- sample(nrow(imputed_data), round(nrow(imputed_data)/5))
+
+testing_data <- imputed_data[test_index,]
+training_data <-imputed_data[-test_index,]
+
+#### Building lasso classifier ####
+
+#create model matrix for the features, remove intercept
+features <- model.matrix(TRANSFUSION_GIVEN~., training_data)[,-1]
+
+#create response vector
+response <- training_data$TRANSFUSION_GIVEN
+
+#identify the lambda which minimizes AUC using 5 fold cross validation
+classifier_tuning <- cv.glmnet(features, response, alpha = 1, family = "binomial", type.measure = "auc", nfolds = 5)
+
+#extract min lambda
+min_lambda <- classifier_tuning$lambda.1se
+
+#extract the coefficients for the min lambda
+coef.glmnet(classifier_tuning, s = min_lambda)
+
+plot(classifier_tuning)
+
+# Creating coefficient plot
+classifier_model <- glmnet(features, response, family = "binomial", alpha = 1)
+plot(classifier_model, label = T, xvar = "lambda")
+
+
+#extract the coef of the model with the lowest lambda
 
 

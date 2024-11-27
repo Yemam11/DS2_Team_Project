@@ -99,16 +99,6 @@ for (col in factor_columns) {
 
 # Checking the result
 str(data)
-# NOTE: ODDITIES IN PROTAMINE --> SHOULD BE A FACTOR OF 0/1, see levels of 25 & 400
-
-# Replace all non binary values with NA
-# data <- data %>% 
-#   mutate(`Protamine (Y=1 N=0)` = case_when(
-#     `Protamine (Y=1 N=0)` != 1 | `Protamine (Y=1 N=0)` != 0 ~ NA,
-#     .default = `Protamine (Y=1 N=0)`
-#   ))
-# 
-# data[["Protamine (Y=1 N=0)"]] <- droplevels(data[["Protamine (Y=1 N=0)"]])
 
 # Converting dates 
 data$`Extubation Date` <-  ymd_hms(data$`Extubation Date`)
@@ -200,7 +190,7 @@ summary(data)
 
 # Variables to investigate for association with transfusion
 modeling_data <- data %>%
-  select(TRANSFUSION_GIVEN, PREOPERATIVE_ECLS, ECLS_ECMO, ECLS_CPB, COPD, CYSTIC_FIBROSIS, PRE_HB, PRE_PLATELETS, PRE_PT, PRE_INR, PRE_CREATININE, PROTAMINE_Y_1_N_0_, INTRA_ALBUMIN_5_ML_, INTRA_CRYSTALLOID_ML_, INTRA_CELL_SAVER_RETURNED_ML_, INTRA_CRYOPRECIPITATE, LAS_SCORE, BMI, AGE, TYPE)
+  select(TRANSFUSION_GIVEN, TOTAL_24HR_RBC ,PREOPERATIVE_ECLS, ECLS_ECMO, ECLS_CPB, COPD, CYSTIC_FIBROSIS, PRE_HB, PRE_PLATELETS, PRE_PT, PRE_INR, PRE_CREATININE, PROTAMINE_Y_1_N_0_, INTRA_ALBUMIN_5_ML_, INTRA_CRYSTALLOID_ML_, INTRA_CELL_SAVER_RETURNED_ML_, INTRA_CRYOPRECIPITATE, LAS_SCORE, BMI, AGE, TYPE)
 
 
 
@@ -220,10 +210,13 @@ summary(modeling_data)
 
 
 #only LAS score has missing data, single imputation will be used
-imputed_data <- mice(data = modeling_data, m = 1, seed = 123)
+total_imputed_data <- mice(data = modeling_data, m = 1, seed = 123)
 
 #Extract the imputed dataset
-imputed_data <- complete(imputed_data)
+total_imputed_data <- complete(total_imputed_data)
+
+imputed_data <- total_imputed_data %>% 
+  select(-TOTAL_24HR_RBC)
 
 #No NAs
 anyNA(imputed_data)
@@ -374,6 +367,45 @@ classifier_model <- glmnet(features, response, family = "binomial", alpha = 1)
 plot(classifier_model, label = T, xvar = "lambda")
 
 
-#extract the coef of the model with the lowest lambda
+#### Building Lasso Regression Model ####
+
+#How does each feature affect the total RBC units transfused?
+
+#Replace the binary transfusion column with the 24H total RBC column
+# Filter for only patients who received blood
+imputed_data <- total_imputed_data %>% 
+  select(-TRANSFUSION_GIVEN) %>% 
+  filter(TOTAL_24HR_RBC != 0)
+
+
+#### Building lasso classifier ####
+
+#Redefine the training and testing set
+testing_data <- imputed_data[test_index,]
+training_data <-imputed_data[-test_index,]
+
+#create model matrix for the features, remove intercept
+features <- model.matrix(TOTAL_24HR_RBC~., training_data)[,-1]
+
+#create response vector
+response <- training_data$TOTAL_24HR_RBC
+
+#identify the lambda which minimizes AUC using 5 fold cross validation
+regression_tuning <- cv.glmnet(features, response, alpha = 1, type.measure = "mse", nfolds = 5)
+
+#extract min lambda
+min_lambda <- regression_tuning$lambda.1se
+
+#extract the coefficients for the min lambda
+coef.glmnet(regression_tuning, s = min_lambda)
+
+plot(regression_tuning)
+
+# Creating coefficient plot
+regression_model <- glmnet(features, response, alpha = 1)
+plot(classifier_model, label = T, xvar = "lambda")
+
+
+
 
 

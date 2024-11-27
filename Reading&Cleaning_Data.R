@@ -99,16 +99,6 @@ for (col in factor_columns) {
 
 # Checking the result
 str(data)
-# NOTE: ODDITIES IN PROTAMINE --> SHOULD BE A FACTOR OF 0/1, see levels of 25 & 400
-
-# Replace all non binary values with NA
-# data <- data %>% 
-#   mutate(`Protamine (Y=1 N=0)` = case_when(
-#     `Protamine (Y=1 N=0)` != 1 | `Protamine (Y=1 N=0)` != 0 ~ NA,
-#     .default = `Protamine (Y=1 N=0)`
-#   ))
-# 
-# data[["Protamine (Y=1 N=0)"]] <- droplevels(data[["Protamine (Y=1 N=0)"]])
 
 # Converting dates 
 data$`Extubation Date` <-  ymd_hms(data$`Extubation Date`)
@@ -200,7 +190,7 @@ summary(data)
 
 # Variables to investigate for association with transfusion
 modeling_data <- data %>%
-  select(TRANSFUSION_GIVEN, PREOPERATIVE_ECLS, ECLS_ECMO, ECLS_ECMO, COPD, CYSTIC_FIBROSIS, PRE_HB, PRE_PLATELETS, PRE_PT, PRE_INR, PRE_CREATININE, PROTAMINE_Y_1_N_0_, INTRA_ALBUMIN_5_ML_, INTRA_CRYSTALLOID_ML_, INTRA_CELL_SAVER_RETURNED_ML_, INTRA_CRYOPRECIPITATE, LAS_SCORE, BMI, AGE, TYPE)
+  select(TRANSFUSION_GIVEN, TOTAL_24HR_RBC ,PREOPERATIVE_ECLS, ECLS_ECMO, ECLS_CPB, COPD, CYSTIC_FIBROSIS, PRE_HB, PRE_PLATELETS, PRE_PT, PRE_INR, PRE_CREATININE, PROTAMINE_Y_1_N_0_, INTRA_ALBUMIN_5_ML_, INTRA_CRYSTALLOID_ML_, INTRA_CELL_SAVER_RETURNED_ML_, INTRA_CRYOPRECIPITATE, LAS_SCORE, BMI, AGE, TYPE)
 
 
 
@@ -220,10 +210,13 @@ summary(modeling_data)
 
 
 #only LAS score has missing data, single imputation will be used
-imputed_data <- mice(data = modeling_data, m = 1, seed = 123)
+total_imputed_data <- mice(data = modeling_data, m = 1, seed = 123)
 
 #Extract the imputed dataset
-imputed_data <- complete(imputed_data)
+total_imputed_data <- complete(total_imputed_data)
+
+imputed_data <- total_imputed_data %>% 
+  select(-TOTAL_24HR_RBC)
 
 #No NAs
 anyNA(imputed_data)
@@ -335,9 +328,134 @@ results <- pivot_longer(results, cols = lasso_AUC:tree_AUC, names_to = "Model", 
 # Calculate the Average AUC for each classifier
 results <- results %>% 
   group_by(Model) %>% 
-  summarise(average_auc = mean(AUC))
+  summarise(average_auc = mean(AUC),
+            stdv = sd(AUC))
 
 # The lasso classifier appears to be the model with the best discrimination
+
+# Cross validation and creation of lasso model
+
+#Set a random seed - we actually may not need to do this, since we are not testing the model afterwards, but should we
+set.seed(12)
+
+#Splitting the data into training and test (80:20 split)
+test_index <- sample(nrow(imputed_data), round(nrow(imputed_data)/5))
+
+testing_data <- imputed_data[test_index,]
+training_data <-imputed_data[-test_index,]
+
+#### Building lasso classifier ####
+
+#create model matrix for the features, remove intercept
+features <- model.matrix(TRANSFUSION_GIVEN~., training_data)[,-1]
+
+#create response vector
+response <- training_data$TRANSFUSION_GIVEN
+
+#identify the lambda which minimizes AUC using 5 fold cross validation
+classifier_tuning <- cv.glmnet(features, response, alpha = 1, family = "binomial", type.measure = "auc", nfolds = 5)
+
+#extract min lambda
+min_lambda <- classifier_tuning$lambda.1se
+
+#extract the coefficients for the min lambda
+coef.glmnet(classifier_tuning, s = min_lambda)
+
+plot(classifier_tuning)
+
+
+
+#Extract coefficient names
+coef_names <- rownames(coef(classifier_model))
+coef_names <- c("Intercept", "Preoperative ECLS", "Intraoperative ECMO", "Intraoperative CPB", "COPD", "Cystic Fibrosis", "Preoperative Hemoglobin", "Preoperative Platelets", "Preoperative 
+Prothrombin Time", "Preoperative Internal Normalized Ratio", "Preoperative Creatinine", "Intraoperative Albumin", "Intraoperative Crystalloid", "Intraoperative Cell Saver", "Intraoperative Cryopercipitate", "LAS Score", "BMI", "Age", "Single Left Lung Transplant", "Single Right Lung Transplant")
+colors <- c("#4b6a53",
+            "#b249d5",
+            "#7edc45",
+            "#5c47b8",
+            "#cfd251",
+            "#ff69b4",
+            "#69c86c",
+            "#cd3e50",
+            "#83d5af",
+            "#da6130",
+            "#5e79b2",
+            "#c29545",
+            "#532a5a",
+            "#5f7b35",
+            "#c497cf",
+            "#773a27",
+            "#7cb9cb",
+            "#594e50",
+            "#d3c4a8",
+            "#c17e7f")
+
+# Creating coefficient plot
+classifier_model <- glmnet(features, response, family = "binomial", alpha = 1)
+plot(classifier_model, xvar = "lambda", lwd = 2, col = colors)
+abline(h = 0, col = "black", lty = 2, lwd = 2)
+title(main = "Lasso Classifier Regularization Plot",
+      line = 3)
+
+#Create a legend
+legend("bottomright",
+       legend = coef_names,
+       col = colors,
+       cex = 0.5,
+       lwd = 2)
+
+
+
+#### Building Lasso Regression Model ####
+
+#How does each feature affect the total RBC units transfused?
+
+#Replace the binary transfusion column with the 24H total RBC column
+# Filter for only patients who received blood
+imputed_data <- total_imputed_data %>% 
+  select(-TRANSFUSION_GIVEN) %>% 
+  filter(TOTAL_24HR_RBC != 0)
+
+
+#### Building lasso classifier ####
+
+#Redefine the training and testing set
+testing_data <- imputed_data[test_index,]
+training_data <-imputed_data[-test_index,]
+
+#create model matrix for the features, remove intercept
+features <- model.matrix(TOTAL_24HR_RBC~., training_data)[,-1]
+
+#create response vector
+response <- training_data$TOTAL_24HR_RBC
+
+#identify the lambda which minimizes AUC using 5 fold cross validation
+regression_tuning <- cv.glmnet(features, response, alpha = 1, type.measure = "mse", nfolds = 5)
+
+#extract min lambda
+min_lambda <- regression_tuning$lambda.1se
+
+#extract the coefficients for the min lambda
+coef.glmnet(regression_tuning, s = min_lambda)
+
+plot(regression_tuning)
+
+# Creating coefficient plot
+regression_model <- glmnet(features, response, alpha = 1)
+plot(regression_model, xvar = "lambda", lwd = 2, col = colors)
+abline(h = 0, col = "black", lty = 2, lwd = 2)
+title(main = "Lasso Regression Regularization Plot",
+      line = 3)
+
+#Create a legend
+legend("topright",
+       legend = coef_names,
+       col = colors,
+       cex = 0.5,
+       lwd = 2)
+
+# TO DO - Create Regression coefficient plots
+
 
 
 

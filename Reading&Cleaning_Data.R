@@ -196,27 +196,33 @@ summary(data)
 #### Initial Imputation / Missing Data Processing ####
 
 #Subsetting the data to select only the relevant columns
-# THIS WILL NEED TO CHANGE
+# BLT, Age(platelets), ECMO (~BMI), Stroke, ECMO/ECLS (pre and intra), CPB, COPD, Cystic Fibrosis, Preoperative blood work (Hb, Plat, PT/INR, Creatinine), Protamine, Albumin 5%, Crystalloid, Cell saver, Cryoprecipitate, LAS score, BMI, Age, Type, First Lung Transplant*, Redo Lung Transplant*
+
+# Variables to investigate for association with transfusion
 modeling_data <- data %>%
-  select(TYPE:PROTAMINE_Y_1_N_0_, TRANSFUSION_GIVEN)
+  select(TRANSFUSION_GIVEN, PREOPERATIVE_ECLS, ECLS_ECMO, ECLS_ECMO, COPD, CYSTIC_FIBROSIS, PRE_HB, PRE_PLATELETS, PRE_PT, PRE_INR, PRE_CREATININE, PROTAMINE_Y_1_N_0_, INTRA_ALBUMIN_5_ML_, INTRA_CRYSTALLOID_ML_, INTRA_CELL_SAVER_RETURNED_ML_, INTRA_CRYOPRECIPITATE, LAS_SCORE, BMI, AGE, TYPE)
+
+
 
 #Removing columns with > 30% missingness
+#Protamine column removed
 for (name in names(modeling_data)){
   pct_missing <- sum(is.na(modeling_data[[name]]))/length(modeling_data[[name]])
-  cat(name, ":", pct_missing,"\n")
   
   #drop the column if 
   if (pct_missing >= 0.3){
+    cat(name, ":", pct_missing,"\n")
     modeling_data[[name]] <- NULL
   }
 }
 
-imputed_data <- mice(data = modeling_data, m = 1, seed = 123, defaultMethod = c("pmm", "logreg", "polyreg", "polyr"))
-#Figure out the error - likely due to coliniearity, this will be resolved when we narrow down which variables to select
-# Will also likely need to deal with colinearity of the data when imputing
+summary(modeling_data)
+
+
+#only LAS score has missing data, single imputation will be used
+imputed_data <- mice(data = modeling_data, m = 1, seed = 123)
 
 #Extract the imputed dataset
-
 imputed_data <- complete(imputed_data)
 
 #No NAs
@@ -240,7 +246,7 @@ for (i in 1:5){
   set.seed(sample(1:1000, 1))
   
   #Splitting the data into training and test (80:20 split)
-  test_index <- sample(nrow(imputed_data), nrow(imputed_data)/5)
+  test_index <- sample(nrow(imputed_data), round(nrow(imputed_data)/5))
   
   testing_data <- imputed_data[test_index,]
   training_data <-imputed_data[-test_index,]
@@ -332,5 +338,7 @@ results <- results %>%
   summarise(average_auc = mean(AUC))
 
 # The lasso classifier appears to be the model with the best discrimination
+
+
 
 

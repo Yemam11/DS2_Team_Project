@@ -14,6 +14,8 @@ library(glmnet)
 library(pROC)
 library(tree)
 library(survival)
+library(gtsummary)
+library(gt)
 
 #### Importing Data ####
      
@@ -183,8 +185,6 @@ summary(data)
 # We can wait and see which variables we will actually use and that will help determine which ones to clean
 
 
-#### Initial Imputation / Missing Data Processing ####
-
 #Subsetting the data to select only the relevant columns
 # BLT, Age(platelets), ECMO (~BMI), Stroke, ECMO/ECLS (pre and intra), CPB, COPD, Cystic Fibrosis, Preoperative blood work (Hb, Plat, PT/INR, Creatinine), Protamine, Albumin 5%, Crystalloid, Cell saver, Cryoprecipitate, LAS score, BMI, Age, Type, First Lung Transplant*, Redo Lung Transplant*
 
@@ -208,6 +208,8 @@ for (name in names(modeling_data)){
 
 summary(modeling_data)
 
+
+#### Initial Imputation / Missing Data Processing ####
 
 #only LAS score has missing data, single imputation will be used
 total_imputed_data <- mice(data = modeling_data, m = 1, seed = 123)
@@ -336,7 +338,7 @@ results <- results %>%
 # Cross validation and creation of lasso model
 
 #Set a random seed - we actually may not need to do this, since we are not testing the model afterwards, but should we
-set.seed(12)
+set.seed(13)
 
 #Splitting the data into training and test (80:20 split)
 test_index <- sample(nrow(imputed_data), round(nrow(imputed_data)/5))

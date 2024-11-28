@@ -358,10 +358,10 @@ response <- training_data$TRANSFUSION_GIVEN
 classifier_tuning <- cv.glmnet(features, response, alpha = 1, family = "binomial", type.measure = "auc", nfolds = 5)
 
 #extract min lambda
-min_lambda <- classifier_tuning$lambda.1se
+min_lambda_classifier <- classifier_tuning$lambda.1se
 
 #extract the coefficients for the min lambda
-coef.glmnet(classifier_tuning, s = min_lambda)
+coef.glmnet(classifier_tuning, s = min_lambda_classifier)
 
 plot(classifier_tuning)
 
@@ -435,10 +435,10 @@ response <- training_data$TOTAL_24HR_RBC
 regression_tuning <- cv.glmnet(features, response, alpha = 1, type.measure = "mse", nfolds = 5)
 
 #extract min lambda
-min_lambda <- regression_tuning$lambda.1se
+min_lambda_regression <- regression_tuning$lambda.1se
 
 #extract the coefficients for the min lambda
-coef.glmnet(regression_tuning, s = min_lambda)
+coef.glmnet(regression_tuning, s = min_lambda_regression)
 
 plot(regression_tuning)
 

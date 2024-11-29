@@ -433,17 +433,68 @@ imputed_data <- total_imputed_data %>%
 
 #### Building lasso classifier ####
 
+
 #Splitting the data into training and test (80:20 split)
-test_index <- sample(nrow(imputed_data), round(nrow(imputed_data)/5))
 
-#Redefine the training and testing set
-testing_data <- imputed_data[test_index,]
-training_data <-imputed_data[-test_index,]
+coefficients_regression <- data.frame(feature = c("Intercept", names(imputed_data)[c(-1, -ncol(imputed_data))], "TypeLeft", "TypeRight"))
 
+
+#Use all the data to train the model -- no testing
+training_data <-imputed_data
 #create model matrix for the features, remove intercept
 features <- model.matrix(TOTAL_24HR_RBC~., training_data)[,-1]
 
+
 #create response vector
+response <- training_data$TOTAL_24HR_RBC
+
+#repeatedly train with different data to assess the impact of sampling bias
+for(i in 1:10){
+  set.seed(sample(1:1000, 1))
+  
+  #Splitting the data into training and test (80:20 split)
+  test_index <- sample(nrow(imputed_data), round(nrow(imputed_data)/5))
+  
+  testing_data <- imputed_data[test_index,]
+  training_data <-imputed_data[-test_index,]
+  
+  #create model matrix for the features, remove intercept
+  features <- model.matrix(TOTAL_24HR_RBC~., training_data)[,-1]
+  
+  #create response vector
+  response <- training_data$TOTAL_24HR_RBC
+  
+  
+  #identify the lambda which minimizes AUC using 5 fold cross validation
+  regression_tuning <- cv.glmnet(features, response, alpha = 1, type.measure = "mse", nfolds = 5)
+  
+  #extract min lambda
+  min_lambda_regression <- regression_tuning$lambda.1se
+  
+  #extract the coefficients for the min lambda
+  coef.glmnet(regression_tuning, s = min_lambda_regression)
+  
+  regression_model <- glmnet(features, response, lambda = min_lambda_regression)
+  
+  #save coefficients
+  coefficients_regression <- cbind(coefficients_regression, as.vector(as.matrix(coef(regression_model))))
+  names(coefficients_regression)[length(coefficients_regression)] <- i
+  
+  #plot(regression_tuning)
+  
+}
+
+#find out how many times each coefficient is non-zero
+resilient_coefficients_regression <- coefficients_regression %>% 
+  mutate(nonZero = rowSums(across(-feature, ~ . != 0)))
+
+#Graph findings
+ggplot(resilient_coefficients, mapping = aes(y = feature, x = nonZero))+
+  geom_col()
+
+#Create a final model to extract coefficients
+testing_data <- imputed_data
+features <- model.matrix(TOTAL_24HR_RBC~., training_data)[,-1]
 response <- training_data$TOTAL_24HR_RBC
 
 #identify the lambda which minimizes AUC using 5 fold cross validation
@@ -452,10 +503,12 @@ regression_tuning <- cv.glmnet(features, response, alpha = 1, type.measure = "ms
 #extract min lambda
 min_lambda_regression <- regression_tuning$lambda.1se
 
-#extract the coefficients for the min lambda
-coef.glmnet(regression_tuning, s = min_lambda_regression)
+#refit model
+regression_model <- glmnet(features, response, lambda = min_lambda_regression)
 
-plot(regression_tuning)
+#extract the coefficients for the min lambda
+coef.glmnet(regression_model, s = min_lambda_regression)
+
 
 # Creating coefficient plot
 regression_model <- glmnet(features, response, alpha = 1)
@@ -472,19 +525,6 @@ legend("topright",
        lwd = 2)
 
 
-#fit a lasso classifier for testing
-regression_model <- glmnet(features, response, family = "gaussian", alpha = 1, lambda = min_lambda_regression)
-
-
-#create new data for predictions, remove intercept
-newdata_regression <- model.matrix(TOTAL_24HR_RBC~., testing_data)[,-1]
-
-#Make predictions using the trained model
-predictions <- as.numeric(predict(regression_model, newx = newdata_regression, s= min_lambda_regression, type = "response"))
-
-# calculate mse
-MSE <- mean((testing_data$TOTAL_24HR_RBC - predictions)^2)
-MSE
 
 # TO DO - Create Regression coefficient plots
 

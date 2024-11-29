@@ -233,7 +233,7 @@ anyNA(imputed_data)
 #Create data frame to hold results
 results <- data.frame(trial = 1:10, lasso_AUC = 1:10, pruned_tree_AUC = 1:10, tree_AUC = 1:10)
 
-# create dataframe to hold coefficients
+# create data frame to hold coefficients
 coefficients <- data.frame(feature = c("Intercept", names(imputed_data)[c(-1, -ncol(imputed_data))], "TypeLeft", "TypeRight"))
 
 
@@ -262,7 +262,7 @@ for (i in 1:10){
   
   
   #extract min lambda
-  min_lambda <- classifier_tuning$lambda.min
+  min_lambda <- classifier_tuning$lambda.1se
   
   #Create a model
   classifier_model <- glmnet(features, response, family = "binomial", alpha = 1, lambda = min_lambda)
@@ -354,11 +354,9 @@ resilient_coefficients <- coefficients %>%
 #Set a random seed - we actually may not need to do this, since we are not testing the model afterwards, but should we
 set.seed(13)
 
-#Splitting the data into training and test (80:20 split)
-test_index <- sample(nrow(imputed_data), round(nrow(imputed_data)/5))
 
-testing_data <- imputed_data[test_index,]
-training_data <-imputed_data[-test_index,]
+# No split needed
+training_data <-imputed_data
 
 #### Building lasso classifier ####
 
@@ -378,25 +376,6 @@ min_lambda_classifier <- classifier_tuning$lambda.1se
 coef.glmnet(classifier_tuning, s = min_lambda_classifier)
 
 plot(classifier_tuning)
-
-#fit a lasso classifier for testing
-classifier_model <- glmnet(features, response, family = "binomial", alpha = 1, lambda = min_lambda_classifier)
-
-
-#create new data for predictions, remove intercept
-newdata_classification <- model.matrix(TRANSFUSION_GIVEN~., testing_data)[,-1]
-
-#Make predictions using the trained model
-predictions <- as.numeric(predict(classifier_model, newx = newdata_classification, s= min_lambda_classifier, type = "response"))
-
-# plot ROC
-ROC_classifier <- roc(TRANSFUSION_GIVEN ~ predictions, data=testing_data)
-ROC_classifier$auc
-plot(ROC_classifier)
-
-
-
-
 
 #Extract coefficient names
 coef_names <- rownames(coef(classifier_model))

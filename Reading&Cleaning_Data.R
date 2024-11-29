@@ -231,11 +231,14 @@ anyNA(imputed_data)
 
 
 #Create data frame to hold results
-results <- data.frame(trial = 1:5, lasso_AUC = 1:5, pruned_tree_AUC = 1:5, tree_AUC = 1:5)
+results <- data.frame(trial = 1:10, lasso_AUC = 1:10, pruned_tree_AUC = 1:10, tree_AUC = 1:10)
+
+# create dataframe to hold coefficients
+coefficients <- data.frame(feature = c("Intercept", names(imputed_data)[c(-1, -ncol(imputed_data))], "TypeLeft", "TypeRight"))
 
 
 # Create loop to repeat the process 5 times and capture the result each time
-for (i in 1:5){
+for (i in 1:10){
   
   #Set a random seed to reduce sampling bias in each iteration
   set.seed(sample(1:1000, 1))
@@ -262,7 +265,14 @@ for (i in 1:5){
   min_lambda <- classifier_tuning$lambda.min
   
   #Create a model
-  classifier_model <- glmnet(features, response, family = "binomial")
+  classifier_model <- glmnet(features, response, family = "binomial", alpha = 1, lambda = min_lambda)
+  
+  #save coefficients
+  coefficients <- cbind(coefficients, as.vector(as.matrix(coef(classifier_model))))
+  names(coefficients)[length(coefficients)] <- i
+  
+  
+  
   
   #create new data for predictions, remove intercept
   newdata <- model.matrix(TRANSFUSION_GIVEN~., testing_data)[,-1]
@@ -335,7 +345,11 @@ results <- results %>%
 
 # The lasso classifier appears to be the model with the best discrimination
 
-# Cross validation and creation of lasso model
+# find predictors that are all non-zero
+resilient_coefficients <- coefficients %>% 
+  filter(if_all(everything(), ~ . != 0))
+
+# Cross validation and creation of lasso models
 
 #Set a random seed - we actually may not need to do this, since we are not testing the model afterwards, but should we
 set.seed(13)
@@ -364,6 +378,23 @@ min_lambda_classifier <- classifier_tuning$lambda.1se
 coef.glmnet(classifier_tuning, s = min_lambda_classifier)
 
 plot(classifier_tuning)
+
+#fit a lasso classifier for testing
+classifier_model <- glmnet(features, response, family = "binomial", alpha = 1, lambda = min_lambda_classifier)
+
+
+#create new data for predictions, remove intercept
+newdata_classification <- model.matrix(TRANSFUSION_GIVEN~., testing_data)[,-1]
+
+#Make predictions using the trained model
+predictions <- as.numeric(predict(classifier_model, newx = newdata_classification, s= min_lambda_classifier, type = "response"))
+
+# plot ROC
+ROC_classifier <- roc(TRANSFUSION_GIVEN ~ predictions, data=testing_data)
+ROC_classifier$auc
+plot(ROC_classifier)
+
+
 
 
 
@@ -421,6 +452,9 @@ imputed_data <- total_imputed_data %>%
 
 #### Building lasso classifier ####
 
+#Splitting the data into training and test (80:20 split)
+test_index <- sample(nrow(imputed_data), round(nrow(imputed_data)/5))
+
 #Redefine the training and testing set
 testing_data <- imputed_data[test_index,]
 training_data <-imputed_data[-test_index,]
@@ -455,6 +489,21 @@ legend("topright",
        col = colors,
        cex = 0.5,
        lwd = 2)
+
+
+#fit a lasso classifier for testing
+regression_model <- glmnet(features, response, family = "gaussian", alpha = 1, lambda = min_lambda_regression)
+
+
+#create new data for predictions, remove intercept
+newdata_regression <- model.matrix(TOTAL_24HR_RBC~., testing_data)[,-1]
+
+#Make predictions using the trained model
+predictions <- as.numeric(predict(regression_model, newx = newdata_regression, s= min_lambda_regression, type = "response"))
+
+# calculate mse
+MSE <- mean((testing_data$TOTAL_24HR_RBC - predictions)^2)
+MSE
 
 # TO DO - Create Regression coefficient plots
 

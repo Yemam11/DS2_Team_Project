@@ -345,20 +345,22 @@ results <- results %>%
 
 # The lasso classifier appears to be the model with the best discrimination
 
-# find predictors that are all non-zero
+# Count number of times the predictor is non-zero
 resilient_coefficients <- coefficients %>% 
-  filter(if_all(everything(), ~ . != 0))
+  mutate(nonZero = rowSums(across(-feature, ~ . != 0)))
 
-# Cross validation and creation of lasso models
+#Graph findings
+ggplot(resilient_coefficients, mapping = aes(y = feature, x = nonZero))+
+  geom_col()
 
-#Set a random seed - we actually may not need to do this, since we are not testing the model afterwards, but should we
+
+#### Building lasso classifier ####
+
+#Set a seed
 set.seed(13)
-
 
 # No split needed
 training_data <-imputed_data
-
-#### Building lasso classifier ####
 
 #create model matrix for the features, remove intercept
 features <- model.matrix(TRANSFUSION_GIVEN~., training_data)[,-1]

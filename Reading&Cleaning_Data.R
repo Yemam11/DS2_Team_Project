@@ -200,7 +200,8 @@ modeling_data <- data %>%
          INTRA_CELL_SAVER_RETURNED_ML_, INTRA_CRYOPRECIPITATE, LAS_SCORE, 
          BMI, AGE, TYPE, IDIOPATHIC_PULMONARY_HYPERTENSION, HYPERTENSION, MASSIVE_TRANSFUSION, 
          RENAL_FAILURE, DIABETES_INSULIN_, GENDER_MALE_, 
-         INTRA_FRESH_FROZEN_PLASMA, INTRA_PACKED_CELLS, INTRA_PLATELETS, INTRA_CRYOPRECIPITATE)
+         INTRA_FRESH_FROZEN_PLASMA, INTRA_PACKED_CELLS, INTRA_PLATELETS, INTRA_CRYOPRECIPITATE, 
+         OR_DATE, DEATH_DATE, ICU_LOS, HOSPITAL_LOS, NEED_REOPERATION_WITHIN_24H)
 # , OR_DATE, DEATH_DATE, 
 
 #Removing columns with > 30% missingness
@@ -441,7 +442,7 @@ features <- model.matrix(TOTAL_24HR_RBC~., training_data)[,-1]
 response <- training_data$TOTAL_24HR_RBC
 
 #identify the lambda which minimizes AUC using 5 fold cross validation
-regression_tuning <- cv.glmnet(features, response, alpha = 1, type.measure = "mse", nfolds = 5)
+regression_tuning <- cv.glmnet(features, response, alpha = 1, family = "binomial", type.measure = "auc", nfolds = 5)
 
 #extract min lambda
 min_lambda_regression <- regression_tuning$lambda.1se

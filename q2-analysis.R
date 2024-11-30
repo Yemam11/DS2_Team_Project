@@ -412,9 +412,43 @@ cox.zph(cox_model_prim)
 # No obvious concerns
 
 # Secondary Analysis 
-cox.zph(cox_model_sec)
+#cox.zph(cox_model_sec)
 
-summary(cox_model_prim)
+#### Classification Modelling for Patient Outcomes ####
+# Using classification lasso model 
+
+# Creating dataset for classification model on patient outcomes 
+modeling_data3 <- modeling_data2 %>%
+  select(-OR_DATE, -DEATH_DATE, PROTAMINE_Y_1_N_0_, -DEAD, -ECLS, -LUNG_DISEASE) %>%
+  cbind(ICU_LOS = data$ICU_LOS, 
+        HOSPITAL_LOS = data$HOSPITAL_LOS, 
+        NEED_REOPERATION_WITHIN_24H = data$NEED_REOPERATION_WITHIN_24H)
+
+modeling_data4 <- imputed_data %>%
+  cbind(ICU_LOS = data$ICU_LOS, 
+        HOSPITAL_LOS = data$HOSPITAL_LOS, 
+        NEED_REOPERATION_WITHIN_24H = data$NEED_REOPERATION_WITHIN_24H,
+        TIME = modeling_data2$TIME_1)
+
+
+ICU_regression_data <- modeling_data3 %>%
+  select(-HOSPITAL_LOS, -NEED_REOPERATION_WITHIN_24H, -TIME_1, -PROTAMINE_Y_1_N_0_)
+
+set.seed(123)
+
+#Splitting the data into training and test (80:20 split)
+test_index_q2 <- sample(nrow(ICU_regression_data ), round(nrow(ICU_regression_data)/5))
+
+testing_data_q2 <- ICU_regression_data[test_index_q2,]
+training_data_q2 <-ICU_regression_data[-test_index_q2,]
+
+#create model matrix for the features, remove intercept
+features_q2 <- model.matrix(ICU_LOS ~., ICU_regression_data)[,-1]
+
+#create response vector
+response_q2_ICU <- ICU_regression_data$ICU_LOS
+
+ICU_regression_tuning <- cv.glmnet(features_q2, response_q2_ICU, alpha = 1, type.measure = "mse", nfolds = 5)
 
 Short-Term Recovery:
   ICU & Hosiptial stay 
@@ -431,6 +465,9 @@ Mortality
 
 Potentially look at:
   POSTDAY1_HB, POSTDAY1_CREATININE for renal and blood markers 
+
+
+
 
 
 

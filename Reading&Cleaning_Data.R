@@ -431,22 +431,13 @@ imputed_data <- total_imputed_data %>%
   filter(TOTAL_24HR_RBC != 0)
 
 
-#### Building lasso classifier ####
-
-
 #Splitting the data into training and test (80:20 split)
+
+#Create data frame to hold results
+results_regression <- data.frame(trial = 1:10, lasso_MSE = 1:10)
 
 coefficients_regression <- data.frame(feature = c("Intercept", names(imputed_data)[c(-1, -ncol(imputed_data))], "TypeLeft", "TypeRight"))
 
-
-#Use all the data to train the model -- no testing
-training_data <-imputed_data
-#create model matrix for the features, remove intercept
-features <- model.matrix(TOTAL_24HR_RBC~., training_data)[,-1]
-
-
-#create response vector
-response <- training_data$TOTAL_24HR_RBC
 
 #repeatedly train with different data to assess the impact of sampling bias
 for(i in 1:10){
@@ -474,14 +465,22 @@ for(i in 1:10){
   #extract the coefficients for the min lambda
   coef.glmnet(regression_tuning, s = min_lambda_regression)
   
+  #create a model for predictions
   regression_model <- glmnet(features, response, lambda = min_lambda_regression)
+  
+  #create new data for predictions using the testing  set, remove intercept
+  newdata <- model.matrix(TOTAL_24HR_RBC~., testing_data)[,-1]
+  
+  #Make predictions using the trained model
+  predictions <- as.numeric(predict(regression_model, newx = newdata, s = min_lambda_regression, type = "response"))
   
   #save coefficients
   coefficients_regression <- cbind(coefficients_regression, as.vector(as.matrix(coef(regression_model))))
   names(coefficients_regression)[length(coefficients_regression)] <- i
   
-  #plot(regression_tuning)
-  
+  #calculate MSE
+  MSE <- mean((testing_data$TOTAL_24HR_RBC - predictions)^2)
+  results_regression[i, "lasso_MSE"] <- MSE
 }
 
 #find out how many times each coefficient is non-zero
@@ -490,6 +489,9 @@ resilient_coefficients_regression <- coefficients_regression %>%
 
 #Graph findings
 ggplot(resilient_coefficients, mapping = aes(y = feature, x = nonZero))+
+  geom_col()
+
+ggplot(results_regression, mapping = aes(x = as.factor(trial), y = lasso_MSE))+
   geom_col()
 
 #Create a final model to extract coefficients

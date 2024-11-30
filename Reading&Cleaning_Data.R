@@ -188,11 +188,20 @@ summary(data)
 #Subsetting the data to select only the relevant columns
 # BLT, Age(platelets), ECMO (~BMI), Stroke, ECMO/ECLS (pre and intra), CPB, COPD, Cystic Fibrosis, Preoperative blood work (Hb, Plat, PT/INR, Creatinine), Protamine, Albumin 5%, Crystalloid, Cell saver, Cryoprecipitate, LAS score, BMI, Age, Type, First Lung Transplant*, Redo Lung Transplant*
 
+# Adding variables for mortality, measuring transfusion composition 
+
+
 # Variables to investigate for association with transfusion
 modeling_data <- data %>%
-  select(TRANSFUSION_GIVEN, TOTAL_24HR_RBC ,PREOPERATIVE_ECLS, ECLS_ECMO, ECLS_CPB, COPD, CYSTIC_FIBROSIS, PRE_HB, PRE_PLATELETS, PRE_PT, PRE_INR, PRE_CREATININE, PROTAMINE_Y_1_N_0_, INTRA_ALBUMIN_5_ML_, INTRA_CRYSTALLOID_ML_, INTRA_CELL_SAVER_RETURNED_ML_, INTRA_CRYOPRECIPITATE, LAS_SCORE, BMI, AGE, TYPE)
-
-
+  select(TRANSFUSION_GIVEN, TOTAL_24HR_RBC ,PREOPERATIVE_ECLS, 
+         ECLS_ECMO, ECLS_CPB, COPD, CYSTIC_FIBROSIS, PRE_HB, 
+         PRE_PLATELETS, PRE_PT, PRE_INR, PRE_CREATININE, 
+         PROTAMINE_Y_1_N_0_, INTRA_ALBUMIN_5_ML_, INTRA_CRYSTALLOID_ML_, 
+         INTRA_CELL_SAVER_RETURNED_ML_, INTRA_CRYOPRECIPITATE, LAS_SCORE, 
+         BMI, AGE, TYPE, IDIOPATHIC_PULMONARY_HYPERTENSION, HYPERTENSION, MASSIVE_TRANSFUSION, 
+         RENAL_FAILURE, DIABETES_INSULIN_, GENDER_MALE_, 
+         INTRA_FRESH_FROZEN_PLASMA, INTRA_PACKED_CELLS, INTRA_PLATELETS, INTRA_CRYOPRECIPITATE)
+# , OR_DATE, DEATH_DATE, 
 
 #Removing columns with > 30% missingness
 #Protamine column removed

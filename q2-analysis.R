@@ -152,6 +152,7 @@ death_data$TRANSFUSION_FACT
 # Stratifying by life support 
 spprt_curves_prim <- survfit(Surv(TIME, DEAD =="1") ~ ECLS, data = modeling_data2)
 
+# Plotting KM curve stratified by ECLS 
 plot(spprt_curves_prim,
      conf.int =0.95,
      col = c("blue", "red"),           
@@ -159,12 +160,22 @@ plot(spprt_curves_prim,
      ylab = "Survival Probability", 
      main = "Kaplan-Meier Curves by ECLS Status")
 
+# Adding legend
 legend("bottomleft",                   
        legend = c("No ECLS", "ECLS (ECMO/CPB)"), 
        col = c("blue", "red"),
        lty = 1, 
        title = "ECLS Status")     
 
+# Log-Log test 
+plot(survfit(Surv(TIME, DEAD =="1") ~ ECLS, data = modeling_data2), fun = "cloglog", 
+     main ="Log-Log Plot for KM Curves Stratified by ECLS", 
+     xlab = "Log(Time Since Operation, Days)", 
+     ylab())
+
+title(main ="Log-Log Plot for KM Curves Stratified by ECLS")
+
+# Doing Log-Rank test for KM curves by ECLS
 survdiff(Surv(TIME, DEAD =="1") ~ ECLS, data = modeling_data2)
 
 # Stratifying by transplant type
@@ -254,6 +265,11 @@ legend("bottomleft",
        title = "Transfusion Amount")           
 
 survdiff(Surv(TIME, DEAD =="1") ~ TRANSFUSION_FACT, data = modeling_data2)
+
+#### KM LOG-LOG TEST ####
+
+plot(survfit(Surv(time, status==1) ~ sex, data=melanoma), fun = "cloglog")
+
 
 #### COX PROPORTIONAL HAZARD MODEL DATA ####
 library(survival)

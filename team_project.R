@@ -179,7 +179,7 @@ data <- data %>%
     TOTAL_24HR_RBC != 0 & !is.na(TOTAL_24HR_RBC) ~ 1
   ))
 
-data$TRANSFUSION_GIVEN <- factor(data$TRANSFUSION_GIVEN, levels = c(1,0), labels = c(TRUE, FALSE))
+data$TRANSFUSION_GIVEN <- as.factor(data$TRANSFUSION_GIVEN, levels = c(1,0), labels = c(TRUE, FALSE))
 
 
 summary(data)
@@ -366,6 +366,15 @@ for (i in 1:10){
 #pivot the data longer
 results <- pivot_longer(results, cols = lasso_AUC:tree_AUC, names_to = "Model", values_to = "AUC")
 
+#Plot the results
+ggplot(results, mapping = aes(x = Model, y = AUC))+
+  geom_boxplot(fill = c("#9cadce", "#7ec4cf", "#daeaf6"))+
+  scale_x_discrete(labels = c("Lasso Classifier", "Pruned CART", "CART"))+
+  labs(title = "Error comparison for Classification Models")+
+  theme(plot.title = element_text(hjust=0.5))
+                 
+
+
 # Calculate the Average AUC for each classifier
 results <- results %>% 
   group_by(Model) %>% 
@@ -379,8 +388,12 @@ resilient_coefficients <- coefficients %>%
   mutate(nonZero = rowSums(across(-feature, ~ . != 0)))
 
 #Graph findings
-ggplot(resilient_coefficients, mapping = aes(y = feature, x = nonZero))+
-  geom_col()
+ggplot(resilient_coefficients, mapping = aes(y = reorder(feature, nonZero), x = nonZero))+
+  geom_col(fill = rep(c("#9cadce", "#7ec4cf", "#daeaf6"), length.out = 19), col = "black")+
+  scale_y_discrete(labels = rev(c("Intercept","Intraoperative ECMO", "Preoperative Hemoglobin", "Intraoperative Cryoprecipitate", "Transplant Type (Right)", "Preoperative Platelets", "Intraoperative Albumin", "Transplant Type (Left)", "COPD", "Intraoperative Crystalloid", "BMI", "Intraoperative CPB", "LAS Score", "Preoperative INR", "Preoperative Creatinine", "Intraoperative Cell Saver", "Age", "Preoperative ECLS", "Cystic Fibrosis")))+
+  scale_x_continuous(breaks = seq(0, max(resilient_coefficients$nonZero), by = 1)) +
+  labs(x = "Number of Coefficient appearances", y = "Feature", title = "Coefficient Resillience Plot")+
+  theme(plot.title = element_text(hjust = 0.5))
 
 
 #### Building lasso classifier ####
@@ -400,11 +413,15 @@ response <- training_data$TRANSFUSION_GIVEN
 #identify the lambda which minimizes AUC using 5 fold cross validation
 classifier_tuning <- cv.glmnet(features, response, alpha = 1, family = "binomial", type.measure = "auc", nfolds = 5)
 
+#plot the AUC curve
+plot(classifier_tuning)
+title(main = "Classifier Model Tuning", line = 3)
+
 #extract min lambda
 min_lambda_classifier <- classifier_tuning$lambda.1se
 
 #extract the coefficients for the min lambda
-coef.glmnet(classifier_tuning, s = min_lambda_classifier)
+classifier_coef <- as.matrix(coef.glmnet(classifier_tuning, s = min_lambda_classifier))
 
 plot(classifier_tuning)
 
@@ -517,8 +534,26 @@ resilient_coefficients_regression <- coefficients_regression %>%
   mutate(nonZero = rowSums(across(-feature, ~ . != 0)))
 
 #Graph findings
-ggplot(resilient_coefficients, mapping = aes(y = feature, x = nonZero))+
-  geom_col()
+
+results_regression$trial <- as.factor(results_regression$trial)
+#Plot the results
+
+mean(results_regression$lasso_MSE)
+sd(results_regression$lasso_MSE)
+ggplot(results_regression, mapping = aes(x = trial, y = lasso_MSE))+
+  geom_col(fill = rep(c("#9cadce", "#7ec4cf", "#daeaf6"), length.out = 10), col = "black")+
+  labs(title = "Error Comparison for Regression Model Across Trials",
+       x = "Trial",
+       y = "MSE")+
+  theme(plot.title = element_text(hjust=0.5))
+
+#Graph findings
+ggplot(resilient_coefficients_regression, mapping = aes(y = reorder(feature, nonZero), x = nonZero))+
+  geom_col(fill = rep(c("#9cadce", "#7ec4cf", "#daeaf6"), length.out = 19), col = "black")+
+  scale_y_discrete(labels = rev(c("Intercept", "Preoperative Hemoglobin", "Intraoperative Cell Saver","Intraoperative Cryoprecipitate","Preoperative ECLS", "Intraoperative CPB","LAS Score", "Intraoperative ECMO","COPD", "Cystic Fibrosis", "Preoperative Platelets", "Preoperative INR", "Preoperative Creatinine",  "Intraoperative Albumin", "Intraoperative Crystalloid", "BMI", "Age", "Transplant Type (Left)", "Transplant Type (Right)")))+
+  scale_x_continuous(breaks = seq(0, max(resilient_coefficients$nonZero), by = 1)) +
+  labs(x = "Number of Coefficient appearances", y = "Feature", title = "Coefficient Resillience Plot (Regression)")+
+  theme(plot.title = element_text(hjust = 0.5))
 
 ggplot(results_regression, mapping = aes(x = as.factor(trial), y = lasso_MSE))+
   geom_col()

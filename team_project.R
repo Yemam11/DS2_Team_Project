@@ -708,53 +708,107 @@ death_data$TRANSFUSION_FACT
 # - Presence of most common lung disease COPD 
 # - Presence of any Lung disease, specifically COPD or CF 
 
-
 #### PRIMARY KM ANALYSIS ####
 # Stratifying by life support 
+# setting graphical parameters
+par(mfrow = c(1,2), mar = c(4, 4, 2, 1), oma = c(0, 0, 4, 0)) 
+
+# creating km curves 
 spprt_curves_prim <- survfit(Surv(TIME, DEAD =="1") ~ ECLS, data = modeling_data2)
 
 plot(spprt_curves_prim,
-     conf.int =0.95,
      col = c("blue", "red"),           
-     xlab = "Time From Lung Transplant (Days)",          
+     xlab = "Time From Transplant (Days)",          
      ylab = "Survival Probability", 
-     main = "Kaplan-Meier Curves by ECLS Status")
+     main = "Kaplan-Meier Curves")
 
 legend("bottomleft",                   
        legend = c("No ECLS", "ECLS (ECMO/CPB)"), 
        col = c("blue", "red"),
        lty = 1, 
-       title = "ECLS Status")     
+       title = "ECLS Status", 
+       cex = 0.8)     
 
+# Log-log graph for Km curves stratified by life support 
+ECLS_cloglog_plot <- plot(survfit(Surv(TIME, DEAD =="1") ~ ECLS, data = modeling_data2), fun = "cloglog", 
+                          main = "Log-Log Plot",
+                          xlab = "Time From Transplant (Days)",       
+                          ylab = "Log(-Log(Survival Probability))", 
+                          col = c("blue", "red"))
+
+legend("bottomright",                   
+       legend = c("No ECLS", "ECLS (ECMO/CPB)"), 
+       col = c("blue", "red"),
+       lty = 1, 
+       title = "ECLS Status", 
+       cex = 0.6)   
+# shows violation of ph assumption 
+
+# Adding an overall title
+mtext("Analysis of Survival and Proportional Hazards by ECLS Status", 
+      outer = TRUE, cex = 1.25, font = 2)
+
+# Reset graphical parameters to default
+par(mfrow = c(1, 1))
+
+# Log-Rank test
 survdiff(Surv(TIME, DEAD =="1") ~ ECLS, data = modeling_data2)
 
 # Stratifying by transplant type
+# setting graphical parameters
+par(mfrow = c(1,2), mar = c(4, 4, 2, 1), oma = c(0, 0, 4, 0)) 
+
+# creating km curves 
 type_curves_prim <- survfit(Surv(TIME, DEAD =="1") ~ TYPE, data = modeling_data2)
 
 plot(type_curves_prim,
-     conf.int = 0.95,
      col = c("blue", "red"),           
-     xlab = "Time From Lung Transplant (Days)",          
+     xlab = "Time From Transplant (Days)",          
      ylab = "Survival Probability", 
-     main = "Kaplan-Meier Curves by Transplant Type")
+     main = "Kaplan-Meier Curves")
 
 legend("bottomleft",                    
        legend = levels(modeling_data2$TYPE), 
        col = c("blue", "red"),                
        lty = 1,                       
-       title = "ECLS Status")
+       title = " Implant Type")
 
+# Log-log graph for Km curves stratified by transplant type
+TYPE_cloglog_plot <- plot(survfit(Surv(TIME, DEAD =="1") ~ TYPE, data = modeling_data2), fun = "cloglog", 
+                          main = "Log-Log Plot",
+                          xlab = "Time From Transplant (days)", 
+                          ylab = "Log(-Log(Survival Probability))", 
+                          col = c("blue", "red"))
+
+legend("bottomright",                    
+       legend = levels(modeling_data2$TYPE), 
+       col = c("blue", "red"),                
+       lty = 1,                       
+       title = " Implant Type")
+# shows violation of ph assumption 
+
+# Adding an overall title
+mtext("Analysis of Survival and Proportional Hazard by Transplant Type", 
+      outer = TRUE, cex = 1.10, font = 2)
+
+# Log-Rank test
 survdiff(Surv(TIME, DEAD =="1") ~ TYPE, data = modeling_data2)
 
+# Reset graphical parameters to default
+par(mfrow = c(1, 1))
+
 # Stratifying by gender
+# setting graphical parameters
+par(mfrow = c(1,2), mar = c(4, 4, 2, 1), oma = c(0, 0, 4, 0)) 
+
+# creating km curves 
 gndr_curves_prim <- survfit(Surv(TIME, DEAD =="1") ~ GENDER_MALE_, data = modeling_data2)
 
 plot(gndr_curves_prim, 
-     conf.int = 0.95,
      col = c("blue", "red"),           
-     xlab = "Time From Lung Transplant (Days)",          
+     xlab = "Time From Transplant (Days)",          
      ylab = "Survival Probability", 
-     main = "Kaplan-Meier Curves by Gender")
+     main = "Kaplan-Meier Curves")
 
 legend("bottomleft",                    
        legend = c("Female", "Male"), 
@@ -762,16 +816,42 @@ legend("bottomleft",
        lty = 1,                       
        title = "Gender")
 
-survdiff(Surv(TIME, DEAD =="1") ~ TYPE, data = modeling_data2)
+# Log-log graph for Km curves stratified by gender
+GENDER_cloglog_plot <- plot(survfit(Surv(TIME, DEAD =="1") ~ GENDER_MALE_, data = modeling_data2), fun = "cloglog", 
+                            main = "Log-Log Plot",
+                            xlab = "Time From Transplant (Days)",          
+                            ylab = "Log(-Log(Survival Probability))", 
+                            col = c("blue", "red"))
+
+legend("bottomright",                    
+       legend = c("Female", "Male"), 
+       col = c("blue", "red"),                
+       lty = 1,                       
+       title = "Gender")
+# shows some violation of ph assumption 
+
+# Adding an overall title
+mtext("Analysis of Survival and Proportional Hazard by Gender", 
+      outer = TRUE, cex = 1.10, font = 2)
+
+# Log-Rank test
+survdiff(Surv(TIME, DEAD =="1") ~  GENDER_MALE_, data = modeling_data2)
+
+# Reset graphical parameters to default
+par(mfrow = c(1, 1))
 
 # Stratifying by COPD
+# setting graphical parameters
+par(mfrow = c(1,2), mar = c(4, 4, 2, 1), oma = c(0, 0, 4, 0)) 
+
+# creating km curves
 copd_curves_prim <- survfit(Surv(TIME, DEAD =="1") ~ COPD, data = modeling_data2)
 
 plot(copd_curves_prim,
      col = c("blue", "red"),           
-     xlab = "Time From Lung Transplant (Days)",          
+     xlab = "Time From Transplant (Days)",          
      ylab = "Survival Probability", 
-     main = "Kaplan-Meier Curves by COPD Presence")
+     main = "Kaplan-Meier Curves")
 
 legend("bottomleft",                    
        legend = c("No COPD", "COPD"), 
@@ -779,34 +859,84 @@ legend("bottomleft",
        lty = 1,                       
        title = "COPD Status")
 
+# Log-log graph for Km curves stratified by COPD
+COPD_cloglog_plot <- plot(survfit(Surv(TIME, DEAD =="1") ~ COPD, data = modeling_data2), fun = "cloglog", 
+                          main = "Log-Log Plot",
+                          xlab = "Time From Transplant days)", 
+                          ylab = "Log(-Log(Survival Probability))", 
+                          col = c("blue", "red"))
+
+legend("bottomright",                    
+       legend = c("No COPD", "COPD"), 
+       col = c("blue", "red"),                
+       lty = 1,                       
+       title = "COPD Status")
+# shows violation of ph assumption 
+
+# Adding an overall title
+mtext("Analysis of Survival and Proportional Hazard by COPD", 
+      outer = TRUE, cex = 1.10, font = 2)
+
+# Log-Rank test
 survdiff(Surv(TIME, DEAD =="1") ~ COPD, data = modeling_data2)
 
 # Stratifying by presence of ANY lung disease
+# setting graphical parameters
+par(mfrow = c(1,2), mar = c(4, 4, 2, 1), oma = c(0, 0, 4, 0)) 
+
+# creating km curves 
 lng_curves_prim <- survfit(Surv(TIME, DEAD =="1") ~ LUNG_DISEASE, data = modeling_data2)
 
 plot(lng_curves_prim,
      col = c("blue", "red"),           
-     xlab = "Time From Lung Transplant (Days)",          
+     xlab = "Time From Transplant (Days)",          
      ylab = "Survival Probability", 
-     main = "Kaplan-Meier Curves by Lung Disease Presence")
+     main = "Kaplan-Meier Curves")
 
 legend("bottomleft",                    
-       legend = c("No Lung Disease", "Any Lung Disease (COPD or CF)"), 
+       legend = c("No Lung Disease", "COPD or CF"), 
        col = c("blue", "red"),                
        lty = 1,                       
-       title = "COPD Status")
+       title = "Any Lung Disease", 
+       cex = 0.8)
 
+# Log-log graph for Km curves stratified by presence of any lung disease 
+LUNG_cloglog_plot <- plot(survfit(Surv(TIME, DEAD =="1") ~ LUNG_DISEASE, data = modeling_data2), fun = "cloglog", 
+                          main = "Log-Log Plot",
+                          xlab = "Time From Transplant (Days)",    
+                          ylab = "Log(-Log(Survival Probability))", 
+                          col = c("blue", "red"))
+
+legend("bottomright",                    
+       legend = c("No Lung Disease", "COPD or CF"), 
+       col = c("blue", "red"),                
+       lty = 1,                       
+       title = "Any Lung Disease", 
+       cex = 0.7)
+# shows violation of ph assumption 
+
+# Adding an overall title
+mtext("Analysis of Survival and Proportional Hazard by Lung Disease", 
+      outer = TRUE, cex = 1.10, font = 2)
+
+# Log-Rank test
 survdiff(Surv(TIME, DEAD =="1") ~ LUNG_DISEASE, data = modeling_data2)
 
-# Stratifying by transfusion amount\
+# restting graphical parameters 
+par(mfrow = c(1,1))
+
+# Stratifying by transfusion amount
+# setting graphical parameters
+par(mfrow = c(1,2), mar = c(4, 4, 2, 1), oma = c(0, 0, 4, 0)) 
+
+# creating km curves 
 trans_curves_prim <- survfit(Surv(TIME, DEAD =="1") ~ TRANSFUSION_FACT, data = modeling_data2)
 
 plot(trans_curves_prim,
-     conf.int =0.95,
      col = 1:5,           
-     xlab = "Time From Lung Transplant (Days)",          
+     xlab = "Time From Transplant (Days)",          
      ylab = "Survival Probability", 
-     main = "Kaplan-Meier Curves by Transfusion Amount")
+     main = "Kaplan-Meier Curves")
 
 legend("bottomleft",                   
        legend = levels(modeling_data2$TRANSFUSION_FACT), 
@@ -814,7 +944,30 @@ legend("bottomleft",
        lty = 1, 
        title = "Transfusion Amount")           
 
+# Log-log graph for Km curves stratified by amount of transfusion  
+TRANS_cloglog_plot <- plot(survfit(Surv(TIME, DEAD =="1") ~ TRANSFUSION_FACT, data = modeling_data2), fun = "cloglog", 
+                           main = "Log-Log Plot",
+                           xlab = "Time From Transplant (days)", 
+                           ylab = "Log(-Log(Survival Probability))", 
+                           col = 1:5)
+
+legend("bottomright",                    
+       legend = levels(modeling_data2$TRANSFUSION_FACT), 
+       col = 1:5,
+       lty = 1, 
+       title = "Transfusion Amount", 
+       cex = 0.6) 
+# shows violation of ph assumption 
+
+# Adding an overall title
+mtext("Analysis of Survival and Proportional Hazard by Transfusion", 
+      outer = TRUE, cex = 1.10, font = 2)
+
+# Log-Rank test
 survdiff(Surv(TIME, DEAD =="1") ~ TRANSFUSION_FACT, data = modeling_data2)
+
+# restting graphical parameters 
+par(mfrow = c(1,1))
 
 #### COX PROPORTIONAL HAZARD MODEL DATA ####
 

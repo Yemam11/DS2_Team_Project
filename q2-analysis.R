@@ -17,7 +17,8 @@ modeling_data2 <- total_imputed_data %>%
          DEATH_DATE = data$DEATH_DATE,
          ICU_LOS = data$ICU_LOS, 
          HOSPITAL_LOS = data$HOSPITAL_LOS, 
-         NEED_REOPERATION_WITHIN_24H = data$NEED_REOPERATION_WITHIN_24H)
+         NEED_REOPERATION_WITHIN_24H = data$NEED_REOPERATION_WITHIN_24H, 
+         INTERSTITIAL_LUNG_DISEASE = data$INTERSTITIAL_LUNG_DISEASE)
       
 # selecting other mortality variables + time variables to calculate time 
  
@@ -293,20 +294,21 @@ any(hypertension_data$HYPERTENSION == "TRUE")
 cox_data_prim <- modeling_data2 %>%
   select(-LUNG_DISEASE, -OR_DATE, -NEED_REOPERATION_WITHIN_24H,
          -DEATH_DATE, -IDIOPATHIC_PULMONARY_HYPERTENSION, -ECLS_CPB, 
-         -ECLS_ECMO, -TIME_2,
-         -ICU_LOS, -HOSPITAL_LOS, -TRANSFUSION_FACT)
+         -ECLS_ECMO, -ICU_LOS, -HOSPITAL_LOS, -TRANSFUSION_FACT, -MASSIVE_TRANSFUSION)
 
 #### COX PROPORTIONAL HAZARD PRIMARY ANALYSIS ####
 # Primary Analysis for cox model
-cox_model_prim <- coxph(Surv(TIME_1, DEAD =="1")~ ., data=cox_data_prim)
+cox_model_prim <- coxph(Surv(TIME, DEAD =="1")~ ., data=cox_data_prim)
 
 summary(cox_model_prim)
 # TOTAL_24HR_RBC, INTRA_CELL_SAVER_RETURNED_ML_, BMI, TYPE, INTRA_FRESH_FROZEN_PLASMA, INTRA_PACKED_CELLS 
-
 
 #### COX MODEL ASSUMPTION TEST ####
 # Primary Analysis 
 cox.zph(cox_model_prim)
 # No obvious concerns
+
+
+# NEW
 
 

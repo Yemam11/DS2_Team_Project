@@ -172,7 +172,9 @@ legend("bottomleft",
        legend = c("No ECLS", "ECLS (ECMO/CPB)"), 
        col = c("blue", "red"),
        lty = 1, 
-       title = "ECLS Status")           
+       title = "ECLS Status")     
+
+survdiff(Surv(TIME_1, DEAD =="1") ~ ECLS, data = modeling_data2)
 
 # Stratifying by transplant type
 type_curves_prim <- survfit(Surv(TIME_1, DEAD =="1") ~ TYPE, data = modeling_data2)
@@ -190,6 +192,8 @@ legend("bottomleft",
        lty = 1,                       
        title = "ECLS Status")
 
+survdiff(Surv(TIME_1, DEAD =="1") ~ TYPE, data = modeling_data2)
+
 # Stratifying by gender
 gndr_curves_prim <- survfit(Surv(TIME_1, DEAD =="1") ~ GENDER_MALE_, data = modeling_data2)
 
@@ -206,11 +210,12 @@ legend("bottomleft",
        lty = 1,                       
        title = "Gender")
 
+survdiff(Surv(TIME_1, DEAD =="1") ~ TYPE, data = modeling_data2)
+
 # Stratifying by COPD
 copd_curves_prim <- survfit(Surv(TIME_1, DEAD =="1") ~ COPD, data = modeling_data2)
 
 plot(copd_curves_prim,
-     conf.int = 0.95,
      col = c("blue", "red"),           
      xlab = "Time From Lung Transplant (Days)",          
      ylab = "Survival Probability", 
@@ -222,11 +227,12 @@ legend("bottomleft",
        lty = 1,                       
        title = "COPD Status")
 
+survdiff(Surv(TIME_1, DEAD =="1") ~ COPD, data = modeling_data2)
+
 # Stratifying by presence of ANY lung disease
 lng_curves_prim <- survfit(Surv(TIME_1, DEAD =="1") ~ LUNG_DISEASE, data = modeling_data2)
 
 plot(lng_curves_prim,
-     conf.int = 0.95,
      col = c("blue", "red"),           
      xlab = "Time From Lung Transplant (Days)",          
      ylab = "Survival Probability", 
@@ -237,6 +243,8 @@ legend("bottomleft",
        col = c("blue", "red"),                
        lty = 1,                       
        title = "COPD Status")
+
+survdiff(Surv(TIME_1, DEAD =="1") ~ LUNG_DISEASE, data = modeling_data2)
 
 # Stratifying by transfusion amount\
 trans_curves_prim <- survfit(Surv(TIME_1, DEAD =="1") ~ TRANSFUSION_FACT, data = modeling_data2)
@@ -253,6 +261,8 @@ legend("bottomleft",
        col = 1:5,
        lty = 1, 
        title = "Transfusion Amount")           
+
+survdiff(Surv(TIME_1, DEAD =="1") ~ TRANSFUSION_FACT, data = modeling_data2)
 
 #### SECONDARY KM ANALYSIS####
 # Stratifying by life support 
@@ -271,6 +281,8 @@ legend("bottomleft",
        lty = 1, 
        title = "ECLS Status")           
 
+survdiff(Surv(TIME_2, DEAD =="1") ~ ECLS, data = modeling_data2)
+
 # Stratifying by transplant type
 type_curves_sec <- survfit(Surv(TIME_2, DEAD =="1") ~ TYPE, data = modeling_data2)
 
@@ -286,6 +298,8 @@ legend("bottomleft",
        col = c("blue", "red"),                
        lty = 1,                       
        title = "ECLS Status")
+
+survdiff(Surv(TIME_2, DEAD =="1") ~ TYPE, data = modeling_data2)
 
 # Stratifying by gender
 gndr_curves_sec <- survfit(Surv(TIME_2, DEAD =="1") ~ GENDER_MALE_, data = modeling_data2)
@@ -303,6 +317,8 @@ legend("bottomleft",
        lty = 1,                       
        title = "Gender")
 
+survdiff(Surv(TIME_2, DEAD =="1") ~ GENDER_MALE_, data = modeling_data2)
+
 # Stratifying by COPD
 copd_curves_sec <- survfit(Surv(TIME_2, DEAD =="1") ~ COPD, data = modeling_data2)
 
@@ -318,6 +334,8 @@ legend("bottomleft",
        col = c("blue", "red"),                
        lty = 1,                       
        title = "COPD Status")
+
+survdiff(Surv(TIME_2, DEAD =="1") ~ COPD, data = modeling_data2)
 
 # Stratifying by presence of ANY lung disease
 lng_curves_sec <- survfit(Surv(TIME_2, DEAD =="1") ~ LUNG_DISEASE, data = modeling_data2)
@@ -335,9 +353,10 @@ legend("bottomleft",
        lty = 1,                       
        title = "COPD Status")
 
+survdiff(Surv(TIME_2, DEAD =="1") ~ LUNG_DISEASE, data = modeling_data2)
 
 #### KM CURVES ASSUMPTION TEST ####
-survdiff(Surv(time, status==1) ~ sex,data=melanoma)
+#survdiff(Surv(time, status==1) ~ sex,data=melanoma)
 
 #### COX PROPORTIONAL HAZARD MODEL DATA ####
 library(survival)

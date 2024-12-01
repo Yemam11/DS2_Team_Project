@@ -211,6 +211,12 @@ for (name in names(modeling_data)){
 summary(modeling_data)
 
 
+#### EDA ####
+
+#Created a table 1, we can recreate this into word or ppt
+tbl_summary(modeling_data,
+            statistic = list(all_continuous() ~ "{mean} ({sd})"))
+
 #### Initial Imputation / Missing Data Processing ####
 
 #only LAS score has missing data, single imputation will be used

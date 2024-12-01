@@ -211,11 +211,32 @@ for (name in names(modeling_data)){
 summary(modeling_data)
 
 
+#all raw data that will be used in the analysis
+#split into 2 datasets (modeling 1 and 2) for ease of use
+modeling_data2 <- modeling_data %>%
+  cbind(IDIOPATHIC_PULMONARY_HYPERTENSION = data$IDIOPATHIC_PULMONARY_HYPERTENSION,
+        HYPERTENSION = data$HYPERTENSION,
+        MASSIVE_TRANSFUSION = data$MASSIVE_TRANSFUSION,
+        RENAL_FAILURE = data$RENAL_FAILURE, 
+        DIABETES_INSULIN_ = data$DIABETES_INSULIN_,
+        GENDER_MALE_ = data$GENDER_MALE_, 
+        INTRA_FRESH_FROZEN_PLASMA = data$INTRA_FRESH_FROZEN_PLASMA,
+        INTRA_PACKED_CELLS = data$INTRA_PACKED_CELLS, 
+        INTRA_PLATELETS = data$INTRA_PLATELETS, 
+        OR_DATE = data$OR_DATE, 
+        DEATH_DATE = data$DEATH_DATE,
+        ICU_LOS = data$ICU_LOS, 
+        HOSPITAL_LOS = data$HOSPITAL_LOS, 
+        NEED_REOPERATION_WITHIN_24H = data$NEED_REOPERATION_WITHIN_24H, 
+        INTERSTITIAL_LUNG_DISEASE = data$INTERSTITIAL_LUNG_DISEASE)
+
 #### EDA ####
 
 #Created a table 1, we can recreate this into word or ppt
-tbl_summary(modeling_data,
+tbl_summary(modeling_data2,
             statistic = list(all_continuous() ~ "{mean} ({sd})"))
+
+
 
 #### Initial Imputation / Missing Data Processing ####
 
@@ -557,6 +578,8 @@ modeling_data2 <- total_imputed_data %>%
         HOSPITAL_LOS = data$HOSPITAL_LOS, 
         NEED_REOPERATION_WITHIN_24H = data$NEED_REOPERATION_WITHIN_24H, 
         INTERSTITIAL_LUNG_DISEASE = data$INTERSTITIAL_LUNG_DISEASE)
+
+summary(modeling_data2)
 
 # selecting other mortality variables + time variables to calculate time 
 

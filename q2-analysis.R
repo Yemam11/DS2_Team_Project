@@ -196,7 +196,7 @@ survdiff(Surv(TIME_1, DEAD =="1") ~ TYPE, data = modeling_data2)
 
 # Stratifying by gender
 gndr_curves_prim <- survfit(Surv(TIME_1, DEAD =="1") ~ GENDER_MALE_, data = modeling_data2)
-
+ 
 plot(gndr_curves_prim, 
      conf.int = 0.95,
      col = c("blue", "red"),           

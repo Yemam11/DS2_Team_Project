@@ -20,7 +20,7 @@ modeling_data2 <- total_imputed_data %>%
          NEED_REOPERATION_WITHIN_24H = data$NEED_REOPERATION_WITHIN_24H)
       
 # selecting other mortality variables + time variables to calculate time 
-
+ 
 # Creating factored transfusion variable
 modeling_data2$TRANSFUSION_FACT <- ifelse(modeling_data$TOTAL_24HR_RBC == 0, 0,
                                           ifelse(modeling_data$TOTAL_24HR_RBC <= 3, 1,
@@ -33,9 +33,9 @@ modeling_data2$TRANSFUSION_FACT <- factor(modeling_data2$TRANSFUSION_FACT,
 
 summary(modeling_data2$TRANSFUSION_FACT)
 
-# Constructing time variables for primary + secondary analysis 
-# initializing time variable for secondary analysis 
-modeling_data2$TIME_2 <- NA 
+# Constructing time variables for analysis 
+# initializing time variable for analysis 
+modeling_data2$TIME <- NA 
 
 # converting date (currently in date form) into Posix for manipulation
 modeling_data2$DEATH_DATE <- as.POSIXct(modeling_data2$DEATH_DATE)
@@ -43,37 +43,27 @@ modeling_data2$DEATH_DATE <- as.POSIXct(modeling_data2$DEATH_DATE)
 # checking if anyone dead at exactly 1 year 
 which((modeling_data2$DEATH_DATE - modeling_data2$OR_DATE) == 365)
 
-# using for loop to calculate time till death for each individual for those who have recorded deaths
-for (n in 1:nrow(modeling_data2)) {
-  if (is.na(data$DEATH_DATE[n])) {
-    modeling_data2$TIME_2[n] <- 365
-  } else {
-    modeling_data2$TIME_2[n] <- modeling_data2$DEATH_DATE[n]  - modeling_data2$OR_DATE[n]
-  }
-} 
-
-# examining time variables 
-modeling_data2$TIME_2
-
-# as no one died at 365 days, can correctly assume all those with time = 365 were alive and censored
-# Creating event variable for kaplan meier curves, creating indicator for patients w/ observed deaths 
-modeling_data2$DEAD <- ifelse(modeling_data2$TIME_2 != 365, 1, 0)
-
-# initializing time variable for primary analysis 
-modeling_data2$TIME_1 <- NA
 
 # using for loop to calculate time till death for each individual for those who have recorded deaths within 1 year
 for (n in 1:nrow(modeling_data2)) {
+  
+  time <- modeling_data2$DEATH_DATE[n]  - modeling_data2$OR_DATE[n]
+    
   if (is.na(modeling_data2$DEATH_DATE[n])) {
-    modeling_data2$TIME_1[n] <- 365
-  } else if (365 >= (modeling_data2$DEATH_DATE[n]  - modeling_data2$OR_DATE[n])) {
-    modeling_data2$TIME_1[n] <- modeling_data2$DEATH_DATE[n]  - modeling_data2$OR_DATE[n]
+    modeling_data2$TIME[n] <- 365
+  } else if (365 >= (time)) {
+    modeling_data2$TIME[n] <- time
   } else {
-    modeling_data2$TIME_1[n] <- 365
+    modeling_data2$TIME[n] <- 365
   }
 } 
 
-modeling_data2$TIME_1 
+modeling_data2$TIME
+
+# as no one died at 365 days, can correctly assume all those with time = 365 were alive and censored
+# Creating event variable for kaplan meier curves, creating indicator for patients w/ observed deaths 
+modeling_data2$DEAD <- ifelse(modeling_data2$TIME < 365, 1, 0)
+
 
 #### TESTING WHICH CAN BE STRATIFIED ####
 
@@ -159,7 +149,7 @@ death_data$TRANSFUSION_FACT
 
 #### PRIMARY KM ANALYSIS ####
 # Stratifying by life support 
-spprt_curves_prim <- survfit(Surv(TIME_1, DEAD =="1") ~ ECLS, data = modeling_data2)
+spprt_curves_prim <- survfit(Surv(TIME, DEAD =="1") ~ ECLS, data = modeling_data2)
 
 plot(spprt_curves_prim,
      conf.int =0.95,
@@ -174,10 +164,10 @@ legend("bottomleft",
        lty = 1, 
        title = "ECLS Status")     
 
-survdiff(Surv(TIME_1, DEAD =="1") ~ ECLS, data = modeling_data2)
+survdiff(Surv(TIME, DEAD =="1") ~ ECLS, data = modeling_data2)
 
 # Stratifying by transplant type
-type_curves_prim <- survfit(Surv(TIME_1, DEAD =="1") ~ TYPE, data = modeling_data2)
+type_curves_prim <- survfit(Surv(TIME, DEAD =="1") ~ TYPE, data = modeling_data2)
 
 plot(type_curves_prim,
      conf.int = 0.95,
@@ -192,10 +182,10 @@ legend("bottomleft",
        lty = 1,                       
        title = "ECLS Status")
 
-survdiff(Surv(TIME_1, DEAD =="1") ~ TYPE, data = modeling_data2)
+survdiff(Surv(TIME, DEAD =="1") ~ TYPE, data = modeling_data2)
 
 # Stratifying by gender
-gndr_curves_prim <- survfit(Surv(TIME_1, DEAD =="1") ~ GENDER_MALE_, data = modeling_data2)
+gndr_curves_prim <- survfit(Surv(TIME, DEAD =="1") ~ GENDER_MALE_, data = modeling_data2)
  
 plot(gndr_curves_prim, 
      conf.int = 0.95,
@@ -210,10 +200,10 @@ legend("bottomleft",
        lty = 1,                       
        title = "Gender")
 
-survdiff(Surv(TIME_1, DEAD =="1") ~ TYPE, data = modeling_data2)
+survdiff(Surv(TIME, DEAD =="1") ~ TYPE, data = modeling_data2)
 
 # Stratifying by COPD
-copd_curves_prim <- survfit(Surv(TIME_1, DEAD =="1") ~ COPD, data = modeling_data2)
+copd_curves_prim <- survfit(Surv(TIME, DEAD =="1") ~ COPD, data = modeling_data2)
 
 plot(copd_curves_prim,
      col = c("blue", "red"),           
@@ -227,10 +217,10 @@ legend("bottomleft",
        lty = 1,                       
        title = "COPD Status")
 
-survdiff(Surv(TIME_1, DEAD =="1") ~ COPD, data = modeling_data2)
+survdiff(Surv(TIME, DEAD =="1") ~ COPD, data = modeling_data2)
 
 # Stratifying by presence of ANY lung disease
-lng_curves_prim <- survfit(Surv(TIME_1, DEAD =="1") ~ LUNG_DISEASE, data = modeling_data2)
+lng_curves_prim <- survfit(Surv(TIME, DEAD =="1") ~ LUNG_DISEASE, data = modeling_data2)
 
 plot(lng_curves_prim,
      col = c("blue", "red"),           
@@ -244,10 +234,10 @@ legend("bottomleft",
        lty = 1,                       
        title = "COPD Status")
 
-survdiff(Surv(TIME_1, DEAD =="1") ~ LUNG_DISEASE, data = modeling_data2)
+survdiff(Surv(TIME, DEAD =="1") ~ LUNG_DISEASE, data = modeling_data2)
 
 # Stratifying by transfusion amount\
-trans_curves_prim <- survfit(Surv(TIME_1, DEAD =="1") ~ TRANSFUSION_FACT, data = modeling_data2)
+trans_curves_prim <- survfit(Surv(TIME, DEAD =="1") ~ TRANSFUSION_FACT, data = modeling_data2)
 
 plot(trans_curves_prim,
      conf.int =0.95,
@@ -262,108 +252,14 @@ legend("bottomleft",
        lty = 1, 
        title = "Transfusion Amount")           
 
-survdiff(Surv(TIME_1, DEAD =="1") ~ TRANSFUSION_FACT, data = modeling_data2)
-
-#### SECONDARY KM ANALYSIS####
-# Stratifying by life support 
-spprt_curves_sec <- survfit(Surv(TIME_2, DEAD =="1") ~ ECLS, data = modeling_data2)
-
-plot(spprt_curves_sec,
-     conf.int =0.95,
-     col = c("blue", "red"),           
-     xlab = "Time From Lung Transplant (Days)",          
-     ylab = "Survival Probability", 
-     main = "Secondary Kaplan-Meier Curves by ECLS Status")
-
-legend("bottomleft",                   
-       legend = c("No ECLS", "ECLS (ECMO/CPB)"), 
-       col = c("blue", "red"),
-       lty = 1, 
-       title = "ECLS Status")           
-
-survdiff(Surv(TIME_2, DEAD =="1") ~ ECLS, data = modeling_data2)
-
-# Stratifying by transplant type
-type_curves_sec <- survfit(Surv(TIME_2, DEAD =="1") ~ TYPE, data = modeling_data2)
-
-plot(type_curves_sec,
-     conf.int = 0.95,
-     col = c("blue", "red"),           
-     xlab = "Time From Lung Transplant (Days)",          
-     ylab = "Survival Probability", 
-     main = "Secondary Kaplan-Meier Curves by Transplant Type")
-
-legend("bottomleft",                    
-       legend = levels(modeling_data2$TYPE), 
-       col = c("blue", "red"),                
-       lty = 1,                       
-       title = "ECLS Status")
-
-survdiff(Surv(TIME_2, DEAD =="1") ~ TYPE, data = modeling_data2)
-
-# Stratifying by gender
-gndr_curves_sec <- survfit(Surv(TIME_2, DEAD =="1") ~ GENDER_MALE_, data = modeling_data2)
-
-plot(gndr_curves_sec, 
-     conf.int = 0.95,
-     col = c("blue", "red"),           
-     xlab = "Time From Lung Transplant (Days)",          
-     ylab = "Survival Probability", 
-     main = "Secondary Kaplan-Meier Curves by Gender")
-
-legend("bottomleft",                    
-       legend = c("Female", "Male"), 
-       col = c("blue", "red"),                
-       lty = 1,                       
-       title = "Gender")
-
-survdiff(Surv(TIME_2, DEAD =="1") ~ GENDER_MALE_, data = modeling_data2)
-
-# Stratifying by COPD
-copd_curves_sec <- survfit(Surv(TIME_2, DEAD =="1") ~ COPD, data = modeling_data2)
-
-plot(copd_curves_sec,
-     conf.int = 0.95,
-     col = c("blue", "red"),           
-     xlab = "Time From Lung Transplant (Days)",          
-     ylab = "Survival Probability", 
-     main = "Secondary Kaplan-Meier Curves by COPD Presence")
-
-legend("bottomleft",                    
-       legend = c("No COPD", "COPD"), 
-       col = c("blue", "red"),                
-       lty = 1,                       
-       title = "COPD Status")
-
-survdiff(Surv(TIME_2, DEAD =="1") ~ COPD, data = modeling_data2)
-
-# Stratifying by presence of ANY lung disease
-lng_curves_sec <- survfit(Surv(TIME_2, DEAD =="1") ~ LUNG_DISEASE, data = modeling_data2)
-
-plot(lng_curves_prim,
-     conf.int = 0.95,
-     col = c("blue", "red"),           
-     xlab = "Time From Lung Transplant (Days)",          
-     ylab = "Survival Probability", 
-     main = "Secondary Kaplan-Meier Curves by Lung Disease Presence")
-
-legend("bottomleft",                    
-       legend = c("No Lung Disease", "Any Lung Disease (COPD or CF)"), 
-       col = c("blue", "red"),                
-       lty = 1,                       
-       title = "COPD Status")
-
-survdiff(Surv(TIME_2, DEAD =="1") ~ LUNG_DISEASE, data = modeling_data2)
-
-#### KM CURVES ASSUMPTION TEST ####
-#survdiff(Surv(time, status==1) ~ sex,data=melanoma)
+survdiff(Surv(TIME, DEAD =="1") ~ TRANSFUSION_FACT, data = modeling_data2)
 
 #### COX PROPORTIONAL HAZARD MODEL DATA ####
 library(survival)
 library(boot)
 
 # Running base cox-ph model to see if there are any issues 
-cox_model <- coxph(Surv(TIME_1, DEAD =="1")~ ., data=modeling_data2)
+cox_model <- coxph(Surv(TIME, DEAD =="1")~ ., data=modeling_data2)
 # seeing convergence issues with variables 5 and 21 here, 
 # specifically ECLS_CPBTRUE & IDIOPATHIC_PULMONARY_HYPERTENSIONTRUE, also need to collapse transfusion, specifically massive
 
@@ -400,12 +296,6 @@ cox_data_prim <- modeling_data2 %>%
          -ECLS_ECMO, -TIME_2,
          -ICU_LOS, -HOSPITAL_LOS, -TRANSFUSION_FACT)
 
-cox_data_sec <- modeling_data2 %>%
-  select(-LUNG_DISEASE, -OR_DATE, -NEED_REOPERATION_WITHIN_24H,
-         -DEATH_DATE, -IDIOPATHIC_PULMONARY_HYPERTENSION, -ECLS_CPB, 
-         -ECLS_ECMO, -TIME_1, -TRANSFUSION_FACT,
-         -ICU_LOS, -HOSPITAL_LOS)
-
 #### COX PROPORTIONAL HAZARD PRIMARY ANALYSIS ####
 # Primary Analysis for cox model
 cox_model_prim <- coxph(Surv(TIME_1, DEAD =="1")~ ., data=cox_data_prim)
@@ -413,22 +303,10 @@ cox_model_prim <- coxph(Surv(TIME_1, DEAD =="1")~ ., data=cox_data_prim)
 summary(cox_model_prim)
 # TOTAL_24HR_RBC, INTRA_CELL_SAVER_RETURNED_ML_, BMI, TYPE, INTRA_FRESH_FROZEN_PLASMA, INTRA_PACKED_CELLS 
 
-# Secondary Analysis for cox model
-cox_model_sec <- coxph(Surv(TIME_2, DEAD == "1")~ ., data=cox_data_sec)
-
-summary(cox_model_sec)
-# PRE_PT, PRE_INR, INTRA_PACKED_CELLS are significant 
-# SAME PREDICTORS (BUT LESS) THAN IN PRIMARY ANALYSIS
 
 #### COX MODEL ASSUMPTION TEST ####
 # Primary Analysis 
 cox.zph(cox_model_prim)
 # No obvious concerns
-
-# Secondary Analysis 
-#cox.zph(cox_model_sec)
-
-
-
 
 

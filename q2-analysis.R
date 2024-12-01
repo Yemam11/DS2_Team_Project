@@ -324,7 +324,98 @@ summary(cox_model_prim)
 cox.zph(cox_model_prim)
 # No obvious concerns
 
+#### ICU Stay Analysis ####
+# setting seed 
+seed(123)
 
-# NEW
+# Creating regression model for predicting patient outcome of length of ICU stay 
+# Creatign dataset, removing variables used for previous analysis or other patient outcome data 
+ICU_reg_data <- modeling_data2 %>%
+  select(-HOSPITAL_LOS, NEED_REOPERATION_WITHIN_24H, -ECLS, -LUNG_DISEASE, -TRANSFUSION_FACT,
+         -OR_DATE, -DEATH_DATE, -DEAD, -TIME)
+
+#Splitting the data into training and test (80:20 split)
+test_index_icu <- sample(nrow(ICU_reg_data), round(nrow(ICU_reg_data)/5))
+
+testing_data_icu <- ICU_reg_data[test_index_icu,]
+training_data_icu <-ICU_reg_data[-test_index_icu,]
+
+#Create a final model to extract coefficients
+features_icu <- model.matrix(ICU_LOS ~., training_data_icu)[,-1]
+response_icu <- training_data_icu$ICU_LOS
+
+#identify the lambda which minimizes AUC using 5 fold cross validation
+regression_tuning_icu <- cv.glmnet(features_icu, response_icu, alpha = 1, type.measure = "mse", nfolds = 5)
+
+#extract min lambda
+min_lambda_regression_icu <- regression_tuning_icu$lambda.min
+
+#refit model
+regression_model_icu <- glmnet(features_icu, response_icu, lambda = min_lambda_regression_icu)
+
+#extract the coefficients for the min lambda
+coef.glmnet(regression_model_icu, s = min_lambda_regression)
+
+
+# Creating coefficient plot
+regression_model_icu <- glmnet(features_icu, response_icu, alpha = 1)
+plot(regression_model_icu, xvar = "lambda", lwd = 2, col = colors)
+abline(h = 0, col = "black", lty = 2, lwd = 2)
+title(main = "Lasso Regression Regularization Plot",
+      line = 3)
+
+#Create a legend
+legend("topright",
+       legend = coef_names,
+       col = colors,
+       cex = 0.5,
+       lwd = 2)
+
+
+#### Hospital Stay Analysis ####
+# Creating regression model for predicting patient outcome of length of hospital stay 
+# Creatign dataset, removing variables used for previous analysis or other patient outcome data 
+HOS_reg_data <- modeling_data2 %>%
+  select(-ICU_LOS, NEED_REOPERATION_WITHIN_24H, -ECLS, -LUNG_DISEASE, -TRANSFUSION_FACT,
+         -OR_DATE, -DEATH_DATE, -DEAD, -TIME)
+
+#Splitting the data into training and test (80:20 split)
+test_index_hos <- sample(nrow(HOS_reg_data), round(nrow(HOS_reg_data)/5))
+
+testing_data_hos <- HOS_reg_data[test_index_hos,]
+training_data_hos <-HOS_reg_data[-test_index_hos,]
+
+#Create a final model to extract coefficients
+features_hos <- model.matrix(HOSPITAL_LOS ~., training_data_hos)[,-1]
+response_hos <- training_data_hos$HOSPITAL_LOS
+
+#identify the lambda which minimizes AUC using 5 fold cross validation
+regression_tuning_hos <- cv.glmnet(features_hos, response_hos, alpha = 1, type.measure = "mse", nfolds = 5)
+
+#extract min lambda
+min_lambda_regression_hos <- regression_tuning_hos$lambda.min
+
+#refit model
+regression_model_hos <- glmnet(features_hos, response_hos, lambda = min_lambda_regression_hos)
+
+#extract the coefficients for the min lambda
+coef.glmnet(regression_model_hos, s = min_lambda_regression)
+
+
+# Creating coefficient plot
+regression_model_hos <- glmnet(features_hos, response_hos, alpha = 1)
+plot(regression_model_hos, xvar = "lambda", lwd = 2, col = colors)
+abline(h = 0, col = "black", lty = 2, lwd = 2)
+title(main = "Lasso Regression Regularization Plot",
+      line = 3)
+
+#Create a legend
+legend("topright",
+       legend = coef_names,
+       col = colors,
+       cex = 0.5,
+       lwd = 2)
+
+
 
 

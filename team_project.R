@@ -819,7 +819,7 @@ survdiff(Surv(TIME, DEAD =="1") ~ TRANSFUSION_FACT, data = modeling_data2)
 #### COX PROPORTIONAL HAZARD MODEL DATA ####
 
 # Running base cox-ph model to see if there are any issues 
-cox_model <- coxph(Surv(TIME, DEAD =="1")~ ., data=modeling_data2)
+# cox_model <- coxph(Surv(TIME, DEAD =="1")~ ., data=modeling_data2)
 # seeing convergence issues with variables 5 and 21 here, 
 # specifically ECLS_CPBTRUE & IDIOPATHIC_PULMONARY_HYPERTENSIONTRUE, also need to collapse transfusion, specifically massive
 
@@ -855,7 +855,7 @@ cox_data_prim <- modeling_data2 %>%
          -DEATH_DATE, -IDIOPATHIC_PULMONARY_HYPERTENSION, -ECLS_CPB, 
          -ECLS_ECMO, -ICU_LOS, -HOSPITAL_LOS, -TRANSFUSION_FACT, -MASSIVE_TRANSFUSION)
 
-#### COX PROPORTIONAL HAZARD PRIMARY ANALYSIS ####
+#### COX PROPORTIONAL HAZARD ANALYSIS ####
 # Primary Analysis for cox model
 cox_model_prim <- coxph(Surv(TIME, DEAD =="1")~ ., data=cox_data_prim)
 

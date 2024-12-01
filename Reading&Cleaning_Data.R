@@ -464,6 +464,102 @@ legend("topright",
 # TO DO - Create Regression coefficient plots
 
 
+##########EDA########## 
+#From data, pior to imputation 
+library(ggplot2)
+library(dplyr)
+
+#Transfusion Given
+#114 given transfusion and 78 without. 
+ggplot(data = data,
+       aes(x = TRANSFUSION_GIVEN)) + geom_bar() + ggtitle("Number of Patients Recieving Hemotransfusion") + 
+  labs( x = "Transfusion Status")+ geom_text(stat = "count", aes(label = ..count..), vjust = -0.5)
+
+#Type of transplant 
+ggplot(data = data,
+       aes(x = TYPE)) + geom_bar(fill = "blue") + ggtitle("Number of Patients with different types of lung transplant") + 
+  labs( x = "Transplant Type")+ geom_text(stat = "count", aes(label = ..count..), vjust = -0.5)
+
+#Age
+hist(data$AGE, 
+     main = "Histogram of Recipient Age", 
+     col=rgb(0, 0, 1, alpha=0.35), 
+     plot =TRUE,
+     ylim = c(0,45), 
+     xlim = c(10,80),
+     xlab = "Recipient Age (Years)")
+     
+#GENDER_Male 
+ggplot(data = data, aes(x = GENDER_MALE_)) +
+  geom_bar(fill = "pink") +
+  ggtitle("Recipient Gender (True as Male)") +
+  labs(x = "Gender", y = "Count") + 
+  geom_text(stat = "count", aes(label = ..count..), vjust = -0.5) 
+  
+#BMI w/ SE
+
+hist(data$BMI, 
+     main = "Histogram of Recipient BMI", 
+     col=rgb(0, 0, 1, alpha=0.35), 
+     plot =TRUE,
+     ylim = c(0,40), 
+     xlim = c(10,35),
+     xlab = "Recipient BMI")
+
+#Intraoperative ECLS, ECMO and CPB
+three_data <- data %>%
+  summarize(
+    count_intra = sum(!is.na(INTRAOPERATIVE_ECLS) & INTRAOPERATIVE_ECLS == TRUE),
+    count_ecmo = sum(!is.na(ECLS_ECMO) & ECLS_ECMO == TRUE),
+    count_CPB = sum(!is.na(ECLS_CPB) & ECLS_CPB == TRUE)
+  )
+
+summary_data_long <- three_data %>%
+  pivot_longer(cols = c(count_CPB, count_ecmo, count_intra),
+               names_to = "ECLS_Type",
+               values_to = "Count")
+
+ggplot(summary_data_long, aes(x = ECLS_Type, y = Count)) +
+  geom_bar(stat = "identity", position = "dodge", fill = "brown") + 
+  labs(x = "ECLS Type", y = "Observation count", title = "Types of ECLS recieved")+
+  geom_text(stat = "count", aes(label = ..count..), vjust = -0.5) 
+  
+  
+#Comorbidities :Renal disease, COPD, Cystic fibrosis, hypertension, and diabetes
+comor_data <- data %>%
+  summarize(
+    COPD = sum(!is.na(COPD) & COPD == TRUE),
+    Hypertension = sum(!is.na(HYPERTENSION) & HYPERTENSION == TRUE),
+    IPH = sum(!is.na(IDIOPATHIC_PULMONARY_HYPERTENSION) & IDIOPATHIC_PULMONARY_HYPERTENSION == TRUE),
+    Cystic_Fibrosis = sum(!is.na(CYSTIC_FIBROSIS) & CYSTIC_FIBROSIS == TRUE),
+    Renal_Failure = sum(!is.na(RENAL_FAILURE) & RENAL_FAILURE == TRUE), 
+    Diabetes = sum(!is.na(DIABETES_INSULIN_) & DIABETES_INSULIN_== TRUE), 
+    Diabetes_Diet = sum(!is.na(DIABETES_DIET_OHGS_) & DIABETES_DIET_OHGS_== TRUE)
+    
+  )
+summary_data_long <- comor_data %>%
+  pivot_longer(cols = c(COPD, Hypertension,IPH, Cystic_Fibrosis, Renal_Failure, Diabetes, Diabetes_Diet),
+               names_to = "Comorbidities",
+               values_to = "Count")
+
+ggplot(summary_data_long, aes(x = Comorbidities, y = Count)) +
+  geom_bar(stat = "identity", position = "dodge", fill = "lightgreen") +
+  labs(x = "Comorbidities", y = "Count", title = "Recipient Comorbidity count") +
+  geom_text(aes(label = Count), vjust = -0.5)
+  
+
+#LAS Score 
+
+hist(data$LAS_SCORE, col = "plum4", main = "Histogram of recipient LAS score", xlab = "Score", breaks = 14)
+
+#Pre-HB
+hist(data$PRE_HB, col = "plum2", main = "Histogram of recipient Preoperative Hemoglobin", xlab = "Hemoglobin level", breaks = 14)
+
+#Pre_INR
+hist(data$PRE_INR, col = "hotpink4", main = "Histogram of Recipient International Normalization Ratio",xlim = c(0,4), xlab = "International Normalization Ratio")
+
+#Pre_Creatinnine
+
 
 
 

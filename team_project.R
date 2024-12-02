@@ -333,7 +333,8 @@ combined_plot2 <- (p5 + p6 + p7) +
 
 combined_plot2
 
-# ECLS DATA
+# ECLS DATA & COMORBIDIITY DATA 
+
 #Intraoperative ECLS, ECMO and CPB
 three_data <- data %>%
   summarize(
@@ -351,9 +352,9 @@ summary_data_long <- three_data %>%
 # Changing label names
 summary_data_long[,1] <- c("CPB", "ECMO", "Any ECLS")
 
-ggplot(summary_data_long, aes(x = ECLS_Type, y = Count)) +
+p8 <- ggplot(summary_data_long, aes(x = ECLS_Type, y = Count)) +
   geom_bar(stat = "identity", position = "dodge", fill = "brown") + 
-  labs(x = "ECLS Type", y = "Count", title = "Types of ECLS Received") +
+  labs(x = "ECLS Type", y = "Count", title = "ECLS Received") +
   geom_text(aes(label = c("CPB", "ECMO", "ECLS")), vjust = -0.5) +
   theme_minimal() +
   theme(
@@ -384,9 +385,9 @@ summary_data_long <- comor_data %>%
 summary_data_long[,1] <- c("COPD", "Hypertension", "IPH", "Cystic Fibrosis", "Renal Failure", 
                            "Diabetes (Insulin)", "Diabetes (Diet/OHG)")
 
-ggplot(summary_data_long, aes(x = Comorbidities, y = Count)) +
+p9<-ggplot(summary_data_long, aes(x = Comorbidities, y = Count)) +
   geom_bar(stat = "identity", position = "dodge", fill = "lightgreen") +
-  labs(x = "Comorbidities", y = "Count", title = "Count of Recipient Comorbidities") +
+  labs(x = "Comorbidities", y = "Count", title = "Recipient Comorbidities") +
   geom_text(aes(label = Count), vjust = -0.5) +
   theme_minimal() +
   theme(
@@ -394,15 +395,21 @@ ggplot(summary_data_long, aes(x = Comorbidities, y = Count)) +
   ) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+# Making a combined plot for ECLS + comor data
+combined_plot3 <- (p8+p9) +
+  plot_annotation(title = "Distribution of Life Support & Comborbidity Data",
+                  theme = theme(plot.title = element_text(hjust = 0.5, size = 16)))
+
+combined_plot3
+
 # LAS SCORES 
 #LAS Score 
 hist(data$LAS_SCORE, col = "plum4", main = "Histogram of Recipient LAS Score", xlab = "LAS Score", breaks = 14)
 
 # PRE-OP BLOOD DATA
 
-# Setting graphical parameters
 # setting graphical parameters
-par(mfrow = c(1,3), mar = c(4, 4, 2, 1), oma = c(0, 0, 4, 0)) 
+par(mfrow = c(2,2), mar = c(4, 4, 2, 1), oma = c(0, 0, 4, 0)) 
 
 #Pre-HB
 hist(data$PRE_HB, col = "plum2", main = "Preoperative Hemoglobin", xlab = "Hemoglobin level", breaks = 14)
@@ -414,6 +421,10 @@ hist(data$PRE_INR, col = "hotpink4", main = " Pre-op IN Ratio",xlim = c(0,4), xl
 hist(data$PRE_CREATININE, col = "hotpink4", main = "Preoperative Creatine Levels",
      xlab = "Preoperative Creatine")
 
+#Pre_Platelets
+hist(data$PRE_PLATELETS, col = "hotpink4", main = "Preoperative Platelet Levels",
+     xlab = "Preoperative Platelets")
+
 mtext("Distribution of Preoperative Blood Variables", 
       outer = TRUE, cex = 1.25, font = 2)
 
@@ -421,131 +432,59 @@ mtext("Distribution of Preoperative Blood Variables",
 par(mfrow = c(1,1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0)) 
 
 # INTRA-OP DATA
-# Fresh frozen plasma 
-p8 <- ggplot(data, aes(x = INTRA_FRESH_FROZEN_PLASMA)) +
-  geom_histogram(
-    binwidth = 5, 
-    fill = rgb(0, 0, 1, alpha = 0.35), 
-    color = "black" 
-  ) +
-  ggtitle("Fresh Frozen Plasma") +
-  xlab("Intra Fresh Frozen Plasma") +
-  ylab("Frequency") +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(hjust = 0.5) # Center the title
-  )
+# Make Collage of intraoperative values
+# Setting graphical parameters 
+par(mfrow = c(2,4), mar = c(4, 4, 2, 1), oma = c(0, 0, 4, 0)) 
 
-p8
+# histogram for intra albumin 
+hist(modeling_data2$INTRA_ALBUMIN_5_ML_,
+     col = "antiquewhite",
+     main = "Albumin",
+     xlab = "Albumin Level")
 
-# Intra packed cells 
-p9 <- ggplot(data, aes(x = INTRA_PACKED_CELLS)) +
-  geom_histogram(
-    binwidth = 5, 
-    fill = rgb(0, 0, 1, alpha = 0.35), 
-    color = "black" 
-  ) +
-  ggtitle("Packed Cells") +
-  xlab("Intra Packed Cells") +
-  ylab("Frequency") +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(hjust = 0.5) # Center the title
-  )
+# histogram for intra crystalloid
+hist(modeling_data2$INTRA_CRYSTALLOID_ML_,
+     col = "burlywood",
+     main = "Crystalloid",
+     xlab = "Crystalloid Level")
 
-p9
+# histogram for intra platelets
+hist(modeling_data2$INTRA_PLATELETS,
+     col = "gold2",
+     main = "Platelets",
+     xlab = "Platelet Count")
 
-# Intra packed cells 
-p10 <- ggplot(data, aes(x = INTRA_PLATELETS)) +
-  geom_histogram(
-    binwidth = 3, 
-    fill = rgb(0, 0, 1, alpha = 0.35), 
-    color = "black" 
-  ) +
-  ggtitle("Intra Platelets") +
-  xlab("Intra Platelet Count") +
-  ylab("Frequency") +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(hjust = 0.5) # Center the title
-  )
+# histogram for intra cryoprecipitate 
+hist(modeling_data2$INTRA_CRYOPRECIPITATE,
+     col = "burlywood1",
+     main = "Cryoprecipitate",
+     xlab = "Cryoprecipitate Count")
 
-p10
+# histogram for intra fresh frozen plasma 
+hist(modeling_data2$INTRA_FRESH_FROZEN_PLASMA,
+     col = "gold4",
+     main = "FFP",
+     xlab = "Fresh Frozen Plasma")
 
-# Intra albumin 
-p11 <- ggplot(data, aes(x = INTRA_ALBUMIN_5_ML_)) +
-  geom_histogram(
-    binwidth = 300, 
-    fill = rgb(0, 0, 1, alpha = 0.35), 
-    color = "black" 
-  ) +
-  ggtitle("Intra Albumin") +
-  xlab("Intra Albumin, 5mL") +
-  ylab("Frequency") +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(hjust = 0.5) # Center the title
-  )
+# histogram for intra packed cells 
+hist(modeling_data2$INTRA_PACKED_CELLS,
+     col = "gold",
+     main = "Red Blood Cells",
+     xlab = "Units")
 
-p11
+# histogram for intra cell saver 
+hist(modeling_data2$INTRA_CELL_SAVER_RETURNED_ML_,
+     col = "burlywood4",
+     main = "Cell Saver",
+     xlab = "Blood Returned (mL)")
 
-# Intra crystalloid 
-p12 <- ggplot(data, aes(x = INTRA_CRYSTALLOID_ML_)) +
-  geom_histogram(
-    binwidth = 300, 
-    fill = rgb(0, 0, 1, alpha = 0.35), 
-    color = "black" 
-  ) +
-  ggtitle("Intra Crystalloid") +
-  xlab("Intra Crystalloid (mL)") +
-  ylab("Frequency") +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(hjust = 0.5) # Center the title
-  )
+# Adding title 
+mtext("Distribution of Intraoperative Blood Variables", 
+      outer = TRUE, cex = 1.25, font = 2)
 
-p12
+# Resetting graphical parameters
+par(mfrow = c(1,1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0)) 
 
-# Intra cryoprecipitate
-p13 <- ggplot(data, aes(x = INTRA_CRYOPRECIPITATE)) +
-  geom_histogram(
-    binwidth = 10, 
-    fill = rgb(0, 0, 1, alpha = 0.35), 
-    color = "black" 
-  ) +
-  ggtitle("Intra Cryoprecipitate") +
-  xlab("Intra Cryoprecipitate") +
-  ylab("Frequency") +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(hjust = 0.5) # Center the title
-  )
-
-p13
-
-# Intra cell saver 
-p14 <- ggplot(data, aes(x = INTRA_CELL_SAVER_RETURNED_ML_)) +
-  geom_histogram(
-    binwidth = 500, 
-    fill = rgb(0, 0, 1, alpha = 0.35), 
-    color = "black" 
-  ) +
-  ggtitle("Intra Cell Saver Returned") +
-  xlab("Intra Cell Saver Returned (mL)") +
-  ylab("Frequency") +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(hjust = 0.5) # Center the title
-  )
-
-p14
-
-# Combining intra plots together
-combined_plot3 <- (p8+p9+p10+p11+p12+p13+p14) +
-  plot_annotation(title = "Distribution of Intraoperative Blood Compostion Variables",
-                  theme = theme(plot.title = element_text(hjust = 0.5, size = 16)))
-
-combined_plot3 
 
 #### Initial Imputation / Missing Data Processing ####
  

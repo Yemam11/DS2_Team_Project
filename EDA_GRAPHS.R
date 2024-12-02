@@ -5,7 +5,9 @@ library(ggplot2)
 library(dplyr)
 library(patchwork)
 
-#Creating histograms for eahc variable, groupingh by types
+#Creating histograms for eahc variable, grouping by types
+
+# TRASNFUSION GRAPHS 
 #Transfusion Given
 #114 given transfusion and 78 without. 
 p1 <- ggplot(data = data,
@@ -13,6 +15,7 @@ p1 <- ggplot(data = data,
   labs( x = "Transfusion Status")+ geom_text(stat = "Count", aes(label = ..count..), vjust = -0.5) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+# Total 24H RBC 
 p2 <- ggplot(data, aes(x = TOTAL_24HR_RBC)) +
   geom_histogram(
     binwidth = 5, 
@@ -27,6 +30,7 @@ p2 <- ggplot(data, aes(x = TOTAL_24HR_RBC)) +
     plot.title = element_text(hjust = 0.5, size = 10)
   )
 
+# Massive transfusion 
 p3 <- ggplot(data = data,
              aes(x = MASSIVE_TRANSFUSION)) + geom_bar() + ggtitle("Massive Transfusion") + 
   labs( x = "Massive Transfusion")+ 
@@ -37,13 +41,14 @@ p3 <- ggplot(data = data,
     plot.title = element_text(hjust = 0.5) # Center the title
   )
 
+# MAking a combined plot for transfusion data 
 combined_plot <- (p1+p2+p3) +
   plot_annotation(title = "Distribution of Transfusion Data: Transfusion Given, Total Given, & Massive Transfusion Count",
                   theme = theme(plot.title = element_text(hjust = 0.5, size = 10)))
 
 combined_plot
 
-
+# TRANSPLANT DATA
 #Type of transplant 
 p4 <- ggplot(data = data,
        aes(x = TYPE)) + geom_bar(fill = "blue") + ggtitle("Lung Transplants, By Type") + 
@@ -52,6 +57,7 @@ p4 <- ggplot(data = data,
 
 p4 
 
+# PATIIENT DATA
 #Age
 p5 <- ggplot(data, aes(x = AGE)) +
   geom_histogram(
@@ -89,12 +95,14 @@ p7 <- ggplot(data, aes(x = BMI)) +
     plot.title = element_text(hjust = 0.5) # Center the title
   )
 
+# Making combined graph for all patient characteristics
 combined_plot2 <- (p5 + p6 + p7) +
   plot_annotation(title = "Distribution of Patient Data: Age, Gender, BMI",
                   theme = theme(plot.title = element_text(hjust = 0.5, size = 16)))
 
 combined_plot2
 
+# ECLS DATA
 #Intraoperative ECLS, ECMO and CPB
 three_data <- data %>%
   summarize(
@@ -103,11 +111,13 @@ three_data <- data %>%
     count_CPB = sum(!is.na(ECLS_CPB) & ECLS_CPB == TRUE)
   )
 
+# Making long data to count
 summary_data_long <- three_data %>%
   pivot_longer(cols = c(count_CPB, count_ecmo, count_intra),
                names_to = "ECLS_Type",
                values_to = "Count")
 
+# Changing label names
 summary_data_long[,1] <- c("CPB", "ECMO", "Any ECLS")
 
 ggplot(summary_data_long, aes(x = ECLS_Type, y = Count)) +
@@ -119,9 +129,7 @@ ggplot(summary_data_long, aes(x = ECLS_Type, y = Count)) +
     plot.title = element_text(hjust = 0.5) # Center the title
   )
 
-
-#### NOT YET DONE ####
-
+# CORMORBIDITY DATA 
 #Comorbidities :Renal disease, COPD, Cystic fibrosis, IPH, hypertension, and diabetes
 comor_data <- data %>%
   summarize(
@@ -134,11 +142,14 @@ comor_data <- data %>%
     Diabetes_Diet = sum(!is.na(DIABETES_DIET_OHGS_) & DIABETES_DIET_OHGS_== TRUE)
     
   )
+
+# Making long data to count
 summary_data_long <- comor_data %>%
   pivot_longer(cols = c(COPD, Hypertension,IPH, Cystic_Fibrosis, Renal_Failure, Diabetes, Diabetes_Diet),
                names_to = "Comorbidities",
                values_to = "Count")
 
+# Changing label names
 summary_data_long[,1] <- c("COPD", "Hypertension", "IPH", "Cystic Fibrosis", "Renal Failure", 
                            "Diabetes (Insulin)", "Diabetes (Diet/OHG)")
 
@@ -152,26 +163,30 @@ ggplot(summary_data_long, aes(x = Comorbidities, y = Count)) +
   ) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-
+# LAS SCORES 
 #LAS Score 
 hist(data$LAS_SCORE, col = "plum4", main = "Histogram of Recipient LAS Score", xlab = "LAS Score", breaks = 14)
 
+# PRE-OP BLOOD DATA
+
+# Setting graphical parameters
+par(mfrow = c(1,3))
+
 #Pre-HB
-
-
 hist(data$PRE_HB, col = "plum2", main = "Preoperative Hemoglobin", xlab = "Hemoglobin level", breaks = 14)
 
 #Pre_INR
 hist(data$PRE_INR, col = "hotpink4", main = " Pre-op IN Ratio",xlim = c(0,4), xlab = "International Normalization Ratio")
 
-#Pre_Creatinnine
+#Pre_Creatinine
 hist(data$PRE_CREATININE, col = "hotpink4", main = "Preoperative Creatine Levels",
  xlab = "Preoperative Creatine")
 
-# NEED TO ADD A TITLE 
-
+# Resetting graphical parameters
 par(mfrow = c(1,1))
 
+# INTA-OP DATA
+# Fresh frozen plasma 
 p8 <- ggplot(data, aes(x = INTRA_FRESH_FROZEN_PLASMA)) +
   geom_histogram(
     binwidth = 5, 
@@ -188,6 +203,7 @@ p8 <- ggplot(data, aes(x = INTRA_FRESH_FROZEN_PLASMA)) +
 
 p8
 
+# Intra packed cells 
 p9 <- ggplot(data, aes(x = INTRA_PACKED_CELLS)) +
   geom_histogram(
     binwidth = 5, 
@@ -204,6 +220,7 @@ p9 <- ggplot(data, aes(x = INTRA_PACKED_CELLS)) +
 
 p9
 
+# Intra packed cells 
 p10 <- ggplot(data, aes(x = INTRA_PLATELETS)) +
   geom_histogram(
     binwidth = 3, 
@@ -220,6 +237,7 @@ p10 <- ggplot(data, aes(x = INTRA_PLATELETS)) +
 
 p10
 
+# Intra albumin 
 p11 <- ggplot(data, aes(x = INTRA_ALBUMIN_5_ML_)) +
   geom_histogram(
     binwidth = 300, 
@@ -236,6 +254,7 @@ p11 <- ggplot(data, aes(x = INTRA_ALBUMIN_5_ML_)) +
 
 p11
 
+# Intra crystalloid 
 p12 <- ggplot(data, aes(x = INTRA_CRYSTALLOID_ML_)) +
   geom_histogram(
     binwidth = 300, 
@@ -252,6 +271,7 @@ p12 <- ggplot(data, aes(x = INTRA_CRYSTALLOID_ML_)) +
 
 p12
 
+# Intra cryoprecipitate
 p13 <- ggplot(data, aes(x = INTRA_CRYOPRECIPITATE)) +
   geom_histogram(
     binwidth = 10, 
@@ -268,6 +288,7 @@ p13 <- ggplot(data, aes(x = INTRA_CRYOPRECIPITATE)) +
 
 p13
 
+# Intra cell saver 
 p14 <- ggplot(data, aes(x = INTRA_CELL_SAVER_RETURNED_ML_)) +
   geom_histogram(
     binwidth = 500, 
@@ -284,6 +305,7 @@ p14 <- ggplot(data, aes(x = INTRA_CELL_SAVER_RETURNED_ML_)) +
 
 p14
 
+# Combining intra plots together
 combined_plot3 <- (p8+p9+p10+p11+p12+p13+p14) +
   plot_annotation(title = "Distribution of Intraoperative Blood Compostion Variables",
                   theme = theme(plot.title = element_text(hjust = 0.5, size = 16)))

@@ -280,7 +280,11 @@ combined_plot
 p4 <- ggplot(data = data,
              aes(x = TYPE)) + geom_bar(fill = "blue") + ggtitle("Lung Transplants, By Type") + 
   labs( x = "Transplant Type")+ geom_text(stat = "Count", aes(label = ..count..), vjust = -0.5)+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5) # Center the title
+  )
 
 p4 
 
@@ -416,7 +420,7 @@ mtext("Distribution of Preoperative Blood Variables",
 # Resetting graphical parameters
 par(mfrow = c(1,1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0)) 
 
-# INTA-OP DATA
+# INTRA-OP DATA
 # Fresh frozen plasma 
 p8 <- ggplot(data, aes(x = INTRA_FRESH_FROZEN_PLASMA)) +
   geom_histogram(
@@ -544,7 +548,7 @@ combined_plot3 <- (p8+p9+p10+p11+p12+p13+p14) +
 combined_plot3 
 
 #### Initial Imputation / Missing Data Processing ####
-
+ 
 #only LAS score has missing data, single imputation will be used
 total_imputed_data <- mice(data = modeling_data, m = 1, seed = 123)
 

@@ -784,7 +784,21 @@ mtext("Analysis of Survival and Proportional Hazards by ECLS Status",
       outer = TRUE, cex = 1.25, font = 2)
 
 # Reset graphical parameters to default
-par(mfrow = c(1, 1))
+par(mfrow = c(1,1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0)) 
+
+# plotting just km curves by ECLS
+plot(spprt_curves_prim,
+     col = c("blue", "red"),           
+     xlab = "Time From Transplant (Days)",          
+     ylab = "Survival Probability", 
+     main = "Kaplan-Meier Survival Curves, Stratified by ECLS")
+
+legend("bottomleft",                   
+       legend = c("No ECLS", "ECLS (ECMO/CPB)"), 
+       col = c("blue", "red"),
+       lty = 1, 
+       title = "ECLS Status", 
+       cex = 0.8)     
 
 # Log-Rank test
 survdiff(Surv(TIME, DEAD =="1") ~ ECLS, data = modeling_data2)
@@ -806,7 +820,7 @@ legend("bottomleft",
        legend = levels(modeling_data2$TYPE), 
        col = c("blue", "red"),                
        lty = 1,                       
-       title = " Implant Type")
+       title = "Transplant Type")
 
 # Log-log graph for Km curves stratified by transplant type
 TYPE_cloglog_plot <- plot(survfit(Surv(TIME, DEAD =="1") ~ TYPE, data = modeling_data2), fun = "cloglog", 
@@ -819,18 +833,31 @@ legend("bottomright",
        legend = levels(modeling_data2$TYPE), 
        col = c("blue", "red"),                
        lty = 1,                       
-       title = " Implant Type")
+       title = "Transplant Type")
 # shows violation of ph assumption 
 
 # Adding an overall title
 mtext("Analysis of Survival and Proportional Hazard by Transplant Type", 
       outer = TRUE, cex = 1.10, font = 2)
 
+# Reset graphical parameters to default
+par(mfrow = c(1,1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0)) 
+
+# plotting just km curves by transplant type
+plot(type_curves_prim,
+     col = c("blue", "red"),           
+     xlab = "Time From Transplant (Days)",          
+     ylab = "Survival Probability", 
+     main = "Kaplan-Meier Survival Curves, Stratified by Transplant Type")
+
+legend("bottomleft",                    
+       legend = levels(modeling_data2$TYPE), 
+       col = c("blue", "red"),                
+       lty = 1,                       
+       title = " Transplant Type")
+
 # Log-Rank test
 survdiff(Surv(TIME, DEAD =="1") ~ TYPE, data = modeling_data2)
-
-# Reset graphical parameters to default
-par(mfrow = c(1, 1))
 
 # Stratifying by gender
 # setting graphical parameters
@@ -869,11 +896,24 @@ legend("bottomright",
 mtext("Analysis of Survival and Proportional Hazard by Gender", 
       outer = TRUE, cex = 1.10, font = 2)
 
+# Reset graphical parameters to default
+par(mfrow = c(1,1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0)) 
+
+# plotting km curves by gender 
+plot(gndr_curves_prim, 
+     col = c("blue", "red"),           
+     xlab = "Time From Transplant (Days)",          
+     ylab = "Survival Probability", 
+     main = "Kaplan-Meier Survival Curves, Stratified by Gender")
+
+legend("bottomleft",                    
+       legend = c("Female", "Male"), 
+       col = c("blue", "red"),                
+       lty = 1,                       
+       title = "Gender")
+
 # Log-Rank test
 survdiff(Surv(TIME, DEAD =="1") ~  GENDER_MALE_, data = modeling_data2)
-
-# Reset graphical parameters to default
-par(mfrow = c(1, 1))
 
 # Stratifying by COPD
 # setting graphical parameters
@@ -911,6 +951,22 @@ legend("bottomright",
 # Adding an overall title
 mtext("Analysis of Survival and Proportional Hazard by COPD", 
       outer = TRUE, cex = 1.10, font = 2)
+
+# Reset graphical parameters to default
+par(mfrow = c(1,1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0)) 
+
+# plotting km curves by COPD
+plot(copd_curves_prim,
+     col = c("blue", "red"),           
+     xlab = "Time From Transplant (Days)",          
+     ylab = "Survival Probability", 
+     main = "Kaplan-Meier Survival Curves, Stratified by COPD")
+
+legend("bottomleft",                    
+       legend = c("No COPD", "COPD"), 
+       col = c("blue", "red"),                
+       lty = 1,                       
+       title = "COPD Status")
 
 # Log-Rank test
 survdiff(Surv(TIME, DEAD =="1") ~ COPD, data = modeling_data2)
@@ -954,11 +1010,25 @@ legend("bottomright",
 mtext("Analysis of Survival and Proportional Hazard by Lung Disease", 
       outer = TRUE, cex = 1.10, font = 2)
 
+# Reset graphical parameters to default
+par(mfrow = c(1,1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0)) 
+
+# plotting just km curves by lung disease
+plot(lng_curves_prim,
+     col = c("blue", "red"),           
+     xlab = "Time From Transplant (Days)",          
+     ylab = "Survival Probability", 
+     main = "Kaplan-Meier Survival Curves, Stratified by Lung Disease")
+
+legend("bottomleft",                    
+       legend = c("No Lung Disease", "COPD or CF"), 
+       col = c("blue", "red"),                
+       lty = 1,                       
+       title = "Any Lung Disease", 
+       cex = 0.8)
+
 # Log-Rank test
 survdiff(Surv(TIME, DEAD =="1") ~ LUNG_DISEASE, data = modeling_data2)
-
-# restting graphical parameters 
-par(mfrow = c(1,1))
 
 # Stratifying by transfusion amount
 # setting graphical parameters
@@ -998,11 +1068,27 @@ legend("bottomright",
 mtext("Analysis of Survival and Proportional Hazard by Transfusion", 
       outer = TRUE, cex = 1.10, font = 2)
 
+# Reset graphical parameters to default
+par(mfrow = c(1,1), mar = c(5.1, 4.1, 4.1, 2.1), oma = c(0, 0, 0, 0)) 
+
+# plotting just km curves by transfusion amount 
+plot(trans_curves_prim,
+     col = 1:5,           
+     xlab = "Time From Transplant (Days)",          
+     ylab = "Survival Probability")
+
+title(main = "Kaplan-Meier Survival Curves, Stratified by Transfusion Amount", 
+      cex.main = 1.1)
+
+legend("bottomleft",                   
+       legend = levels(modeling_data2$TRANSFUSION_FACT), 
+       col = 1:5,
+       lty = 1, 
+       title = "Transfusion Amount")   
+
 # Log-Rank test
 survdiff(Surv(TIME, DEAD =="1") ~ TRANSFUSION_FACT, data = modeling_data2)
 
-# restting graphical parameters 
-par(mfrow = c(1,1))
 
 #### COX PROPORTIONAL HAZARD MODEL DATA ####
 

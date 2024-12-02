@@ -1,7 +1,9 @@
 
 
+par(mfrow=c(1,1))
+
 ICU_reg_data <- modeling_data2 %>%
-  select(-HOSPITAL_LOS, NEED_REOPERATION_WITHIN_24H, -ECLS, -LUNG_DISEASE, -TRANSFUSION_FACT,
+  select(-ICU_LOS, NEED_REOPERATION_WITHIN_24H, -ECLS, -LUNG_DISEASE, -MASSIVE_TRANSFUSION,
          -OR_DATE, -DEATH_DATE, -DEAD, -TIME)
 
 ICU_reg_data$TYPE <- total_imputed_data$TYPE
@@ -30,16 +32,16 @@ for(i in 1:10){
   training_data_icu <-ICU_reg_data[-test_index_icu,]
   
   #create model matrix for the features, remove intercept
-  features_icu <- model.matrix(ICU_LOS~., training_data_icu)[,-1]
+  features_icu <- model.matrix(HOSPITAL_LOS ~., training_data_icu)[,-1]
   
   #create response vector
-  response_icu <- training_data_icu$ICU_LOS
+  response_icu <- training_data_icu$HOSPITAL_LOS
   
   #identify the lambda which minimizes AUC using 5 fold cross validation
   regression_tuning_icu <- cv.glmnet(features_icu, response_icu, alpha = 1, type.measure = "mse", nfolds = 5)
   
   #extract min lambda
-  min_lambda_regression_icu <- regression_tuning_icu$lambda.1se
+  min_lambda_regression_icu <- regression_tuning_icu$lambda.min
   
   #extract the coefficients for the min lambda
   coef.glmnet(regression_tuning_icu, s = min_lambda_regression_icu)
@@ -48,7 +50,7 @@ for(i in 1:10){
   regression_model_icu <- glmnet(features_icu, response_icu, lambda = min_lambda_regression_icu)
   
   #create new data for predictions using the testing  set, remove intercept
-  newdata_icu <- model.matrix(ICU_LOS~., testing_data_icu)[,-1]
+  newdata_icu <- model.matrix(HOSPITAL_LOS~., testing_data_icu)[,-1]
   
   #Make predictions using the trained model
   predictions_icu <- as.numeric(predict(regression_model_icu, newx = newdata_icu, s = min_lambda_regression_icu, type = "response"))
@@ -58,7 +60,7 @@ for(i in 1:10){
   names(coefficients_regression_icu)[length(coefficients_regression_icu)] <- i
   
   #calculate MSE
-  MSE <- mean((testing_data_icu$ICU_LOS - predictions_icu)^2)
+  MSE <- mean((testing_data_icu$HOSPITAL_LOS - predictions_icu)^2)
   results_regression[i, "lasso_MSE"] <- MSE
 }
 
@@ -72,14 +74,14 @@ ggplot(resilient_coefficients_regression_icu, mapping = aes(y = feature, x = non
 
 #Create a final model to extract coefficients
 testing_data_icu <- ICU_reg_data
-features_icu <- model.matrix(ICU_LOS ~., training_data_icu)[,-1]
-response_icu <- training_data_icu$ICU_LOS
+features_icu <- model.matrix(HOSPITAL_LOS ~., training_data_icu)[,-1]
+response_icu <- training_data_icu$HOSPITAL_LOS
 
 #identify the lambda which minimizes AUC using 5 fold cross validation
 regression_tuning_icu <- cv.glmnet(features_icu, response_icu, alpha = 1, type.measure = "mse", nfolds = 5)
 
 #extract min lambda
-min_lambda_regression_icu <- regression_tuning_icu$lambda.1se
+min_lambda_regression_icu <- regression_tuning_icu$lambda.min
 
 #refit model
 regression_model_icu <- glmnet(features_icu, response_icu, lambda = min_lambda_regression_icu)
@@ -101,4 +103,5 @@ legend("topright",
        col = colors,
        cex = 0.5,
        lwd = 2)
+
 
